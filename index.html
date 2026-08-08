@@ -43,7 +43,7 @@ const firebaseConfig = {
   databaseURL: "https://....firebaseio.com",
   projectId: "...",
   ...
-};`,rows:6,className:"w-full border border-neutral-300 rounded p-2 text-[10px] font-mono resize-y"}),(0,v.jsx)("button",{onClick:Ky,className:"w-full bg-neutral-800 text-white rounded py-1.5",children:"\uC800\uC7A5 \uBC0F \uB3D9\uAE30\uD654 \uCF1C\uAE30"})]}),of&&(0,v.jsx)("p",{className:"text-neutral-500 mt-1.5 text-center",children:of})]})]}),(0,v.jsx)("a",{href:"https://blog.naver.com/bgroh",target:"_blank",rel:"noopener noreferrer",className:"text-[10px] text-neutral-400 hover:text-neutral-600 mt-3 text-center",children:"RBG Tools - Daily Planner V2.1"}),(0,v.jsx)("p",{className:"text-[10px] text-neutral-400 mt-2",children:"\uB370\uC774\uD130\uB294 \uC774 \uAE30\uAE30\uC758 \uC774 \uC571 \uC548\uC5D0 \uB0A0\uC9DC\uBCC4\uB85C \uC790\uB3D9 \uC800\uC7A5\uB429\uB2C8\uB2E4."}),zoomImg&&(0,v.jsx)("div",{onClick:()=>setZoomImg(null),style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:16},children:(0,v.jsxs)("div",{onClick:e=>e.stopPropagation(),style:{position:"relative",maxWidth:"100%",maxHeight:"100%"},children:[(0,v.jsx)("img",{src:zoomImg,style:{maxWidth:"100%",maxHeight:"90vh",objectFit:"contain",borderRadius:4}}),(0,v.jsx)("button",{onClick:()=>setZoomImg(null),style:{position:"absolute",top:-14,right:-14,background:"#000",color:"#fff",borderRadius:"9999px",width:28,height:28,fontSize:16,lineHeight:"28px",border:"2px solid #fff"},children:"\u00D7"})]})})]})}var BS=(0,Uy.createRoot)(document.getElementById("root"));BS.render(By.default.createElement(Xd));})();
+};`,rows:6,className:"w-full border border-neutral-300 rounded p-2 text-[10px] font-mono resize-y"}),(0,v.jsx)("button",{onClick:Ky,className:"w-full bg-neutral-800 text-white rounded py-1.5",children:"\uC800\uC7A5 \uBC0F \uB3D9\uAE30\uD654 \uCF1C\uAE30"})]}),of&&(0,v.jsx)("p",{className:"text-neutral-500 mt-1.5 text-center",children:of})]})]}),(0,v.jsx)("a",{href:"https://blog.naver.com/bgroh",target:"_blank",rel:"noopener noreferrer",className:"text-[10px] text-neutral-400 hover:text-neutral-600 mt-3 text-center",children:"RBG Tools - Daily Planner V2.2"}),(0,v.jsx)("p",{className:"text-[10px] text-neutral-400 mt-2",children:"\uB370\uC774\uD130\uB294 \uC774 \uAE30\uAE30\uC758 \uC774 \uC571 \uC548\uC5D0 \uB0A0\uC9DC\uBCC4\uB85C \uC790\uB3D9 \uC800\uC7A5\uB429\uB2C8\uB2E4."}),zoomImg&&(0,v.jsx)("div",{onClick:()=>setZoomImg(null),style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:16},children:(0,v.jsxs)("div",{onClick:e=>e.stopPropagation(),style:{position:"relative",maxWidth:"100%",maxHeight:"100%"},children:[(0,v.jsx)("img",{src:zoomImg,style:{maxWidth:"100%",maxHeight:"90vh",objectFit:"contain",borderRadius:4}}),(0,v.jsx)("button",{onClick:()=>setZoomImg(null),style:{position:"absolute",top:-14,right:-14,background:"#000",color:"#fff",borderRadius:"9999px",width:28,height:28,fontSize:16,lineHeight:"28px",border:"2px solid #fff"},children:"\u00D7"})]})})]})}var BS=(0,Uy.createRoot)(document.getElementById("root"));BS.render(By.default.createElement(Xd));})();
 /*! Bundled license information:
 
 react/cjs/react.production.min.js:
@@ -502,10 +502,49 @@ firebase/app/dist/esm/index.esm.js:
   var popupQueue = [];
   var popupShowing = false;
 
+  var audioCtx = null;
+  function ensureAudioCtx(){
+    if (audioCtx) return audioCtx;
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
+    } catch (e) {}
+    return audioCtx;
+  }
+  function playBeep(){
+    var ctx = ensureAudioCtx();
+    if (!ctx) return;
+    try {
+      if (ctx.state === "suspended") ctx.resume();
+      var beepCount = 3;
+      for (var i = 0; i < beepCount; i++) {
+        var startTime = ctx.currentTime + i * 0.35;
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(880, startTime);
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(0.35, startTime + 0.02);
+        gain.gain.linearRampToValueAtTime(0, startTime + 0.22);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + 0.25);
+      }
+    } catch (e) {}
+  }
+  function vibrateDevice(){
+    try {
+      if (navigator.vibrate) navigator.vibrate([250, 120, 250, 120, 250]);
+    } catch (e) {}
+  }
+
   function showNextPopup(){
     if (popupShowing || popupQueue.length === 0) return;
     popupShowing = true;
     var item = popupQueue.shift();
+    playBeep();
+    vibrateDevice();
 
     var overlay = document.createElement("div");
     overlay.setAttribute("role", "alertdialog");
@@ -626,7 +665,7 @@ firebase/app/dist/esm/index.esm.js:
     toggleBtn.style.justifyContent = "center";
     toggleBtn.style.cursor = "pointer";
     toggleBtn.style.boxShadow = "0 2px 8px rgba(0,0,0,0.15)";
-    toggleBtn.addEventListener("click", function(){ setAlarmOn(!isAlarmOn()); });
+    toggleBtn.addEventListener("click", function(){ ensureAudioCtx(); setAlarmOn(!isAlarmOn()); });
     document.body.appendChild(toggleBtn);
     updateToggleUI();
   }
