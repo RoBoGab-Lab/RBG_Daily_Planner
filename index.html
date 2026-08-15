@@ -476,5 +476,563 @@ firebase/app/dist/esm/index.esm.js:
 */
 
 </script>
+<script>
+(function () {
+  "use strict";
+  if (document.getElementById("lyv-addon-root")) return;
+
+  /* ============================================================
+   * 상수 / 유틸
+   * ========================================================== */
+  var DEFAULT_CATEGORIES = [
+    { id: "cat-work", name: "업무", color: "#B2CFEB" },
+    { id: "cat-sub", name: "보조업무", color: "#B2EBEB" },
+    { id: "cat-exercise", name: "운동", color: "#EBCFB2" },
+    { id: "cat-social", name: "교류", color: "#EBEBB2" },
+    { id: "cat-meal", name: "식사", color: "#EBB2B2" },
+    { id: "cat-house", name: "가사", color: "#B2B2EB" },
+    { id: "cat-family", name: "가족", color: "#EBB2EB" },
+    { id: "cat-health", name: "건강", color: "#B2EBB2" },
+    { id: "cat-rest", name: "휴식", color: "#B2EBCF" },
+    { id: "cat-transit", name: "교통", color: "#CFB2EB" },
+    { id: "cat-edu", name: "교육", color: "#CFEBB2" },
+    { id: "cat-daily", name: "일상", color: "#EBB2CF" }
+  ];
+  var DAY_START_WORDS = ["시작", "스타트", "기상", "start", "출발"];
+  var DAY_END_WORDS = ["취침", "잠자리", "잠자기", "잠듦", "끝", "종료"];
+
+  function isDayStart(s) {
+    if (!s) return false;
+    return DAY_START_WORDS.indexOf(s.trim().toLowerCase()) !== -1;
+  }
+  function isDayEnd(s) {
+    if (!s) return false;
+    return DAY_END_WORDS.indexOf(s.trim()) !== -1;
+  }
+  function pad2(n) { return String(n).padStart(2, "0"); }
+  function esc(s) {
+    var d = document.createElement("div");
+    d.textContent = s == null ? "" : String(s);
+    return d.innerHTML;
+  }
+  function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+
+  var LS = {
+    categories: "categories",
+    day: function (d) { return "day:" + d; },
+    planGoals: "lyv_planGoals_v1",
+    monthlyReview: "lyv_monthlyReview_v1",
+    taskLog: function (d) { return "lyv_taskLog_v1:" + d; }
+  };
+
+  function readJSON(key, fallback) {
+    try {
+      var raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (e) { return fallback; }
+  }
+  function writeJSON(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+  }
+
+  function getCategories() {
+    var arr = readJSON(LS.categories, null);
+    return (Array.isArray(arr) && arr.length) ? arr : DEFAULT_CATEGORIES;
+  }
+  function findCat(id, cats) {
+    var list = cats || getCategories();
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
+  }
+  function catName(id, cats) { var c = findCat(id, cats); return c ? c.name : id; }
+  function catColor(id, cats) { var c = findCat(id, cats); return c ? c.color : "#cccccc"; }
+
+  function emptyDay() {
+    var hourData = {};
+    for (var h = 0; h < 24; h++) {
+      hourData[String(h)] = { quarters: [
+        { text: "", categoryId: "" }, { text: "", categoryId: "" },
+        { text: "", categoryId: "" }, { text: "", categoryId: "" }
+      ] };
+    }
+    return { hourData: hourData, remark: "", note: "", images: [] };
+  }
+
+  function getDayData(dateStr) {
+    return readJSON(LS.day(dateStr), null);
+  }
+
+  /* 하루 데이터를 분석해서 카테고리별/수면/미기록 시간을 계산.
+     본 앱의 "빈 칸은 직전 유형이 이어진다" 규칙(CatBlockEnd 로직)을 최대한 동일하게 재현. */
+  function analyzeDay(dayData) {
+    var d = dayData || emptyDay();
+    var catMinutes = {};
+    var sleepMinutes = 0, unrecordedMinutes = 0;
+    var currentCat = null, inSleep = false;
+    var blocks = [];
+    for (var idx = 0; idx < 96; idx++) {
+      var h = Math.floor(idx / 4), q = idx % 4;
+      var hd = d.hourData && d.hourData[String(h)];
+      var cell = (hd && hd.quarters && hd.quarters[q]) || { text: "", categoryId: "" };
+      var text = cell.text || "";
+      var catId = cell.categoryId || "";
+
+      if (catId) {
+        currentCat = catId;
+        inSleep = false;
+        blocks.push({ startIdx: idx, text: text, categoryId: catId, quarterCount: 1 });
+      } else if (isDayEnd(text)) {
+        currentCat = null;
+        inSleep = true;
+      } else if (isDayStart(text) && inSleep) {
+        inSleep = false;
+        currentCat = null;
+      } else if (currentCat && blocks.length && blocks[blocks.length - 1].categoryId === currentCat) {
+        blocks[blocks.length - 1].quarterCount++;
+      }
+
+      if (currentCat) { catMinutes[currentCat] = (catMinutes[currentCat] || 0) + 15; }
+      else if (inSleep) { sleepMinutes += 15; }
+      else { unrecordedMinutes += 15; }
+    }
+    return { catMinutes: catMinutes, sleepMinutes: sleepMinutes, unrecordedMinutes: unrecordedMinutes, blocks: blocks };
+  }
+
+  function fmtHM(min) {
+    min = Math.round(min || 0);
+    var h = Math.floor(min / 60), m = min % 60;
+    if (h <= 0) return m + "분";
+    if (m === 0) return h + "시간";
+    return h + "시간 " + m + "분";
+  }
+
+  function keysWithPrefix(prefix) {
+    var out = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf("day:" + prefix) === 0) out.push(k.slice(4));
+    }
+    out.sort();
+    return out;
+  }
+
+  function sumMonth(ym) {
+    var days = keysWithPrefix(ym);
+    var catMinutes = {}, sleepMinutes = 0, unrecordedMinutes = 0;
+    days.forEach(function (dateStr) {
+      var a = analyzeDay(getDayData(dateStr));
+      Object.keys(a.catMinutes).forEach(function (cid) {
+        catMinutes[cid] = (catMinutes[cid] || 0) + a.catMinutes[cid];
+      });
+      sleepMinutes += a.sleepMinutes;
+      unrecordedMinutes += a.unrecordedMinutes;
+    });
+    return { catMinutes: catMinutes, sleepMinutes: sleepMinutes, unrecordedMinutes: unrecordedMinutes, dayCount: days.length };
+  }
+
+  function sumYear(y) {
+    var months = {};
+    for (var m = 1; m <= 12; m++) {
+      var ym = y + "-" + pad2(m);
+      months[ym] = sumMonth(ym);
+    }
+    var catMinutes = {}, sleepMinutes = 0, unrecordedMinutes = 0, dayCount = 0;
+    Object.keys(months).forEach(function (ym) {
+      var s = months[ym];
+      Object.keys(s.catMinutes).forEach(function (cid) {
+        catMinutes[cid] = (catMinutes[cid] || 0) + s.catMinutes[cid];
+      });
+      sleepMinutes += s.sleepMinutes;
+      unrecordedMinutes += s.unrecordedMinutes;
+      dayCount += s.dayCount;
+    });
+    return { catMinutes: catMinutes, sleepMinutes: sleepMinutes, unrecordedMinutes: unrecordedMinutes, dayCount: dayCount, months: months };
+  }
+
+  /* ============================================================
+   * 현재 표시 중인 날짜 추적 (기존 앱 헤더를 읽기만 함 - React 트리 비수정)
+   * ========================================================== */
+  function getDisplayedDateStr() {
+    var root = document.getElementById("root");
+    if (root) {
+      var btns = root.querySelectorAll("button");
+      for (var i = 0; i < btns.length; i++) {
+        var t = (btns[i].textContent || "").trim();
+        var m = t.match(/^(\d{4})\.\s*(\d{2})\.\s*(\d{2})\./);
+        if (m) return m[1] + "-" + m[2] + "-" + m[3];
+      }
+    }
+    var d = new Date();
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+
+  /* ============================================================
+   * DOM 뼈대 생성
+   * ========================================================== */
+  var wrap = document.createElement("div");
+  wrap.id = "lyv-addon-root";
+  wrap.className = "min-h-0 bg-[#f7f6f3] flex flex-col items-center px-2 pb-10";
+  wrap.innerHTML =
+    '<div class="w-full max-w-md">' +
+      '<div class="flex items-center gap-2 mt-2 mb-3 px-1">' +
+        '<div class="h-px flex-1 bg-neutral-300"></div>' +
+        '<div class="text-[11px] tracking-wide text-neutral-500 font-bold">류비셰프 스타일 확장 기능</div>' +
+        '<div class="h-px flex-1 bg-neutral-300"></div>' +
+      '</div>' +
+
+      '<div class="bg-white border border-neutral-300 rounded-sm shadow-sm p-3 mb-3">' +
+        '<div class="text-[13px] font-bold text-neutral-800 mb-2" id="lyv-status-title">오늘의 기록 현황</div>' +
+        '<div id="lyv-status-body"></div>' +
+      '</div>' +
+
+      '<div class="bg-white border border-neutral-300 rounded-sm shadow-sm mb-3 overflow-hidden">' +
+        '<div class="grid grid-cols-4 text-[11px] font-bold" id="lyv-tabs">' +
+          '<button data-tab="plan" class="py-2 border-r border-b border-neutral-300">계획대비실적</button>' +
+          '<button data-tab="year" class="py-2 border-r border-b border-neutral-300">연간정리</button>' +
+          '<button data-tab="est" class="py-2 border-r border-b border-neutral-300">예상·실제</button>' +
+          '<button data-tab="review" class="py-2 border-b border-neutral-300">월간회고</button>' +
+        '</div>' +
+        '<div class="p-3" id="lyv-tab-body"></div>' +
+      '</div>' +
+
+      '<div class="text-center text-[10px] text-neutral-400 pb-2">이 영역은 기존 기록 데이터를 읽어 보조 지표를 계산해 보여줍니다. 원본 플래너 데이터는 수정하지 않습니다.</div>' +
+    '</div>';
+
+  document.body.appendChild(wrap);
+
+  var activeTab = "plan";
+  var planMonth = null; // YYYY-MM, lazily set to displayed month
+  var yearSel = null; // YYYY
+  var reviewSaveTimer = null;
+
+  /* ------------------------------------------------------------
+   * 카드 1: 오늘의 기록 현황 (미기록 시간 확인)
+   * ---------------------------------------------------------- */
+  function renderStatus(dateStr) {
+    var titleEl = document.getElementById("lyv-status-title");
+    var body = document.getElementById("lyv-status-body");
+    titleEl.textContent = dateStr + " 기록 현황";
+
+    var day = getDayData(dateStr);
+    var a = analyzeDay(day);
+    var cats = getCategories();
+    var totalCatMin = 0;
+    Object.keys(a.catMinutes).forEach(function (k) { totalCatMin += a.catMinutes[k]; });
+    var recordedMin = totalCatMin + a.sleepMinutes;
+    var pct = Math.round((recordedMin / 1440) * 100);
+
+    var html = "";
+    html += '<div class="flex items-center gap-3 mb-2">';
+    html += '<div class="text-[22px] font-bold text-neutral-800">' + pct + '%</div>';
+    html += '<div class="flex-1 text-[11px] text-neutral-600 leading-tight">';
+    html += '기록됨 ' + fmtHM(recordedMin) + ' (분류 ' + fmtHM(totalCatMin) + ' + 수면추정 ' + fmtHM(a.sleepMinutes) + ')<br>';
+    html += '<span class="' + (a.unrecordedMinutes > 0 ? "text-rose-500 font-bold" : "text-neutral-400") + '">미기록 ' + fmtHM(a.unrecordedMinutes) + '</span>';
+    html += '</div></div>';
+
+    // 96칸 히트맵 스트립
+    html += '<div class="flex w-full h-3 rounded-sm overflow-hidden border border-neutral-200 mb-1">';
+    var currentCat = null, inSleep = false;
+    for (var idx = 0; idx < 96; idx++) {
+      var h = Math.floor(idx / 4), q = idx % 4;
+      var hd = day && day.hourData && day.hourData[String(h)];
+      var cell = (hd && hd.quarters && hd.quarters[q]) || { text: "", categoryId: "" };
+      var text = cell.text || "", catId = cell.categoryId || "";
+      if (catId) { currentCat = catId; inSleep = false; }
+      else if (isDayEnd(text)) { currentCat = null; inSleep = true; }
+      else if (isDayStart(text) && inSleep) { inSleep = false; currentCat = null; }
+      var bg = currentCat ? catColor(currentCat, cats) : (inSleep ? "#d4d4d4" : "#fecdd3");
+      html += '<div style="flex:1;background:' + bg + '" title="' + pad2(h) + ':' + pad2(q * 15) + '"></div>';
+    }
+    html += '</div>';
+    html += '<div class="text-[9px] text-neutral-400 flex justify-between"><span>00:00</span><span>12:00</span><span>23:45</span></div>';
+
+    body.innerHTML = html;
+  }
+
+  /* ------------------------------------------------------------
+   * 카드 2-a: 계획 대비 실적 (월간 목표 vs 실적)
+   * ---------------------------------------------------------- */
+  function renderPlanTab(dateStr) {
+    if (!planMonth) planMonth = dateStr.slice(0, 7);
+    var cats = getCategories();
+    var goalsAll = readJSON(LS.planGoals, {});
+    var goals = goalsAll[planMonth] || {};
+    var actual = sumMonth(planMonth);
+
+    var html = "";
+    html += '<div class="flex items-center justify-center gap-3 mb-2">';
+    html += '<button data-plan-nav="-1" class="text-neutral-500 hover:text-black px-2">◁</button>';
+    html += '<div class="text-[12px] font-bold">' + planMonth + ' 목표 대비 실적</div>';
+    html += '<button data-plan-nav="1" class="text-neutral-500 hover:text-black px-2">▷</button>';
+    html += '</div>';
+    html += '<div class="text-[10px] text-neutral-400 mb-2">이번 달 기록 ' + actual.dayCount + '일 · 유형별 목표시간(시간 단위)을 입력하면 달성률이 계산됩니다.</div>';
+
+    html += '<div class="space-y-2">';
+    cats.forEach(function (c) {
+      var goalMin = (goals[c.id] || 0) * 60;
+      var actMin = actual.catMinutes[c.id] || 0;
+      var ratio = goalMin > 0 ? clamp((actMin / goalMin) * 100, 0, 999) : null;
+      html += '<div>';
+      html += '<div class="flex items-center gap-2 text-[11px] mb-0.5">';
+      html += '<span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:' + c.color + '"></span>';
+      html += '<span class="w-14 shrink-0 truncate">' + esc(c.name) + '</span>';
+      html += '<input type="number" min="0" step="0.5" data-goal-cat="' + c.id + '" value="' + (goals[c.id] || "") + '" placeholder="목표(h)" class="w-16 border border-neutral-300 rounded-sm px-1 py-0.5 text-[11px]">';
+      html += '<span class="text-neutral-400">h →</span>';
+      html += '<span class="flex-1 text-right font-bold">' + fmtHM(actMin) + (ratio !== null ? ' <span class="text-neutral-400 font-normal">(' + Math.round(ratio) + '%)</span>' : '') + '</span>';
+      html += '</div>';
+      if (goalMin > 0) {
+        html += '<div class="w-full h-1.5 bg-neutral-100 rounded-sm overflow-hidden"><div style="width:' + clamp(ratio, 0, 100) + '%;background:' + c.color + '" class="h-full"></div></div>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+
+    document.getElementById("lyv-tab-body").innerHTML = html;
+
+    document.querySelectorAll("[data-plan-nav]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var d = parseInt(btn.getAttribute("data-plan-nav"), 10);
+        var parts = planMonth.split("-").map(Number);
+        var dt = new Date(parts[0], parts[1] - 1 + d, 1);
+        planMonth = dt.getFullYear() + "-" + pad2(dt.getMonth() + 1);
+        renderPlanTab(getDisplayedDateStr());
+      });
+    });
+    document.querySelectorAll("[data-goal-cat]").forEach(function (inp) {
+      inp.addEventListener("change", function () {
+        var goalsAll2 = readJSON(LS.planGoals, {});
+        var g = goalsAll2[planMonth] || {};
+        var v = parseFloat(inp.value);
+        if (isNaN(v) || v <= 0) delete g[inp.getAttribute("data-goal-cat")];
+        else g[inp.getAttribute("data-goal-cat")] = v;
+        goalsAll2[planMonth] = g;
+        writeJSON(LS.planGoals, goalsAll2);
+        renderPlanTab(getDisplayedDateStr());
+      });
+    });
+  }
+
+  /* ------------------------------------------------------------
+   * 카드 2-b: 연간 정리
+   * ---------------------------------------------------------- */
+  function renderYearTab(dateStr) {
+    if (!yearSel) yearSel = dateStr.slice(0, 4);
+    var cats = getCategories();
+    var y = sumYear(yearSel);
+    var totalCatMin = 0;
+    Object.keys(y.catMinutes).forEach(function (k) { totalCatMin += y.catMinutes[k]; });
+
+    var html = "";
+    html += '<div class="flex items-center justify-center gap-3 mb-2">';
+    html += '<button data-year-nav="-1" class="text-neutral-500 hover:text-black px-2">◁</button>';
+    html += '<div class="text-[12px] font-bold">' + yearSel + '년 정리</div>';
+    html += '<button data-year-nav="1" class="text-neutral-500 hover:text-black px-2">▷</button>';
+    html += '</div>';
+    html += '<div class="text-[10px] text-neutral-400 mb-2">기록된 날 ' + y.dayCount + '일 · 분류시간 합계 ' + fmtHM(totalCatMin) + ' · 수면추정 ' + fmtHM(y.sleepMinutes) + '</div>';
+
+    // 카테고리별 막대
+    html += '<div class="space-y-1 mb-3">';
+    var sorted = cats.slice().sort(function (a, b) { return (y.catMinutes[b.id] || 0) - (y.catMinutes[a.id] || 0); });
+    sorted.forEach(function (c) {
+      var m = y.catMinutes[c.id] || 0;
+      if (m <= 0) return;
+      var pct = totalCatMin > 0 ? Math.round((m / totalCatMin) * 100) : 0;
+      html += '<div class="flex items-center gap-2 text-[11px]">';
+      html += '<span class="inline-block w-2.5 h-2.5 rounded-sm shrink-0" style="background:' + c.color + '"></span>';
+      html += '<span class="w-14 shrink-0 truncate">' + esc(c.name) + '</span>';
+      html += '<div class="flex-1 h-2 bg-neutral-100 rounded-sm overflow-hidden"><div style="width:' + pct + '%;background:' + c.color + '" class="h-full"></div></div>';
+      html += '<span class="w-9 text-right text-neutral-500">' + pct + '%</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // 월별 추이 막대
+    html += '<div class="text-[10px] text-neutral-400 mb-1">월별 분류시간 추이</div>';
+    var maxMonthMin = 1;
+    for (var m1 = 1; m1 <= 12; m1++) {
+      var ym1 = yearSel + "-" + pad2(m1);
+      var tot = 0;
+      Object.keys(y.months[ym1].catMinutes).forEach(function (k) { tot += y.months[ym1].catMinutes[k]; });
+      if (tot > maxMonthMin) maxMonthMin = tot;
+    }
+    html += '<div class="flex items-end gap-1 h-16 mb-1">';
+    for (var m2 = 1; m2 <= 12; m2++) {
+      var ym2 = yearSel + "-" + pad2(m2);
+      var tot2 = 0;
+      Object.keys(y.months[ym2].catMinutes).forEach(function (k) { tot2 += y.months[ym2].catMinutes[k]; });
+      var hpct = Math.round((tot2 / maxMonthMin) * 100);
+      html += '<div class="flex-1 flex flex-col items-center justify-end h-full">';
+      html += '<div class="w-full bg-[#B2CFEB] rounded-t-sm" style="height:' + hpct + '%" title="' + m2 + '월 ' + fmtHM(tot2) + '"></div>';
+      html += '</div>';
+    }
+    html += '</div>';
+    html += '<div class="flex gap-1 text-[9px] text-neutral-400">';
+    for (var m3 = 1; m3 <= 12; m3++) html += '<div class="flex-1 text-center">' + m3 + '</div>';
+    html += '</div>';
+
+    document.getElementById("lyv-tab-body").innerHTML = html;
+
+    document.querySelectorAll("[data-year-nav]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var d = parseInt(btn.getAttribute("data-year-nav"), 10);
+        yearSel = String(parseInt(yearSel, 10) + d);
+        renderYearTab(getDisplayedDateStr());
+      });
+    });
+  }
+
+  /* ------------------------------------------------------------
+   * 카드 2-c: 예상 소요시간 vs 실제
+   * ---------------------------------------------------------- */
+  function renderEstTab(dateStr) {
+    var list = readJSON(LS.taskLog(dateStr), []);
+    var day = getDayData(dateStr);
+    var a = analyzeDay(day);
+
+    var html = "";
+    html += '<div class="text-[12px] font-bold mb-2">' + dateStr + ' 예상 · 실제 소요시간</div>';
+    html += '<div class="text-[10px] text-neutral-400 mb-2">작업명을 위 일간표에 적은 항목명과 똑같이 입력하면 "자동합산" 버튼으로 실제 시간을 채울 수 있습니다.</div>';
+
+    html += '<div class="space-y-2" id="lyv-est-rows">';
+    list.forEach(function (row, i) {
+      var diff = (row.actMin || 0) - (row.estMin || 0);
+      var diffStr = diff === 0 ? "-" : (diff > 0 ? "+" + diff + "분" : diff + "분");
+      var diffColor = diff > 0 ? "text-rose-500" : (diff < 0 ? "text-blue-500" : "text-neutral-400");
+      html += '<div class="border border-neutral-200 rounded-sm p-1.5">';
+      html += '<div class="flex items-center gap-1 mb-1">';
+      html += '<input type="text" data-est-field="name" data-est-idx="' + i + '" value="' + esc(row.name || "") + '" placeholder="작업명" class="flex-1 min-w-0 border-b border-dotted border-neutral-300 text-[11px] px-1 py-0.5">';
+      html += '<button data-est-del="' + i + '" class="text-neutral-400 hover:text-rose-500 text-[11px] px-1">삭제</button>';
+      html += '</div>';
+      html += '<div class="flex items-center gap-1 text-[10px] text-neutral-500">';
+      html += '<span>예상</span><input type="number" min="0" data-est-field="estMin" data-est-idx="' + i + '" value="' + (row.estMin || "") + '" class="w-14 border border-neutral-300 rounded-sm px-1 py-0.5 text-[11px]"><span>분</span>';
+      html += '<span class="ml-2">실제</span><input type="number" min="0" data-est-field="actMin" data-est-idx="' + i + '" value="' + (row.actMin || "") + '" class="w-14 border border-neutral-300 rounded-sm px-1 py-0.5 text-[11px]"><span>분</span>';
+      html += '<button data-est-auto="' + i + '" class="ml-1 px-1.5 py-0.5 border border-neutral-300 rounded-sm hover:bg-neutral-100">자동합산</button>';
+      html += '<span class="ml-auto font-bold ' + diffColor + '">' + diffStr + '</span>';
+      html += '</div></div>';
+    });
+    html += '</div>';
+    html += '<button id="lyv-est-add" class="mt-2 w-full py-1.5 border border-dashed border-neutral-300 rounded-sm text-[11px] text-neutral-500 hover:bg-neutral-50">+ 항목 추가</button>';
+
+    document.getElementById("lyv-tab-body").innerHTML = html;
+
+    function persist(newList) {
+      writeJSON(LS.taskLog(dateStr), newList);
+    }
+
+    document.getElementById("lyv-est-add").addEventListener("click", function () {
+      var l = readJSON(LS.taskLog(dateStr), []);
+      l.push({ name: "", estMin: "", actMin: "" });
+      persist(l);
+      renderEstTab(dateStr);
+    });
+    document.querySelectorAll("[data-est-del]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var l = readJSON(LS.taskLog(dateStr), []);
+        l.splice(parseInt(btn.getAttribute("data-est-del"), 10), 1);
+        persist(l);
+        renderEstTab(dateStr);
+      });
+    });
+    document.querySelectorAll("[data-est-field]").forEach(function (inp) {
+      inp.addEventListener("change", function () {
+        var l = readJSON(LS.taskLog(dateStr), []);
+        var i = parseInt(inp.getAttribute("data-est-idx"), 10);
+        var field = inp.getAttribute("data-est-field");
+        if (!l[i]) return;
+        l[i][field] = (field === "name") ? inp.value : (parseInt(inp.value, 10) || "");
+        persist(l);
+        renderEstTab(dateStr);
+      });
+    });
+    document.querySelectorAll("[data-est-auto]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var l = readJSON(LS.taskLog(dateStr), []);
+        var i = parseInt(btn.getAttribute("data-est-auto"), 10);
+        var name = (l[i] && l[i].name || "").trim();
+        if (!name) return;
+        var sum = 0;
+        a.blocks.forEach(function (b) {
+          if ((b.text || "").trim() === name) sum += b.quarterCount * 15;
+        });
+        l[i].actMin = sum;
+        persist(l);
+        renderEstTab(dateStr);
+      });
+    });
+  }
+
+  /* ------------------------------------------------------------
+   * 카드 2-d: 월간 회고
+   * ---------------------------------------------------------- */
+  function renderReviewTab(dateStr) {
+    var ym = dateStr.slice(0, 7);
+    var all = readJSON(LS.monthlyReview, {});
+    var text = all[ym] || "";
+
+    var html = "";
+    html += '<div class="text-[12px] font-bold mb-2">' + ym + ' 월간 회고</div>';
+    html += '<div class="text-[10px] text-neutral-400 mb-2">이번 달 총평, 다음 달에 조정할 점을 짧게 남겨보세요.</div>';
+    html += '<textarea id="lyv-review-text" rows="6" class="w-full border border-neutral-300 rounded-sm p-2 text-[12px] outline-none" placeholder="예: 집필 목표 40시간 중 28시간 달성. 오전 집중 시간이 잘 지켜졌으나 저녁 이후 기록 공백이 많았음. 다음 달은 21시 이후 기록 습관을 보완할 것.">' + esc(text) + '</textarea>';
+    html += '<div class="flex justify-end mt-1"><span id="lyv-review-saved" class="text-[10px] text-neutral-400"></span></div>';
+
+    document.getElementById("lyv-tab-body").innerHTML = html;
+
+    var ta = document.getElementById("lyv-review-text");
+    ta.addEventListener("input", function () {
+      clearTimeout(reviewSaveTimer);
+      reviewSaveTimer = setTimeout(function () {
+        var all2 = readJSON(LS.monthlyReview, {});
+        all2[ym] = ta.value;
+        writeJSON(LS.monthlyReview, all2);
+        var s = document.getElementById("lyv-review-saved");
+        if (s) {
+          s.textContent = "저장됨";
+          setTimeout(function () { if (s) s.textContent = ""; }, 1200);
+        }
+      }, 500);
+    });
+  }
+
+  /* ------------------------------------------------------------
+   * 탭 전환 & 전체 갱신 루프
+   * ---------------------------------------------------------- */
+  function renderTabBody(dateStr) {
+    document.querySelectorAll("#lyv-tabs button").forEach(function (b) {
+      var on = b.getAttribute("data-tab") === activeTab;
+      b.className = "py-2 border-r border-b border-neutral-300" + (on ? " bg-black text-white" : " bg-white text-neutral-600 hover:bg-neutral-100");
+    });
+    if (activeTab === "plan") renderPlanTab(dateStr);
+    else if (activeTab === "year") renderYearTab(dateStr);
+    else if (activeTab === "est") renderEstTab(dateStr);
+    else if (activeTab === "review") renderReviewTab(dateStr);
+  }
+
+  document.getElementById("lyv-tabs").addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-tab]");
+    if (!btn) return;
+    activeTab = btn.getAttribute("data-tab");
+    renderTabBody(getDisplayedDateStr());
+  });
+
+  var lastSignature = "";
+  function refreshAll() {
+    var dateStr = getDisplayedDateStr();
+    // 시그니처(날짜 + 해당 day 데이터 길이)로 변화 감지 -> 불필요한 리렌더/포커스 끊김 최소화
+    var raw = localStorage.getItem(LS.day(dateStr)) || "";
+    var sig = dateStr + ":" + raw.length + ":" + activeTab + ":" + (planMonth || "") + ":" + (yearSel || "");
+    if (sig === lastSignature && document.activeElement && wrap.contains(document.activeElement)) {
+      return; // addon 내부에 포커스가 있는 입력 중에는 강제로 다시 그리지 않음
+    }
+    lastSignature = sig;
+    renderStatus(dateStr);
+    renderTabBody(dateStr);
+  }
+
+  renderTabBody(getDisplayedDateStr());
+  refreshAll();
+  setInterval(refreshAll, 1000);
+})();
+
+</script>
 </body>
 </html>
