@@ -46,7 +46,7 @@ const firebaseConfig = {
   databaseURL: "https://....firebaseio.com",
   projectId: "...",
   ...
-};`,rows:6,className:"w-full border border-neutral-300 rounded p-2 text-[10px] font-mono resize-y"}),(0,v.jsx)("button",{onClick:Ky,className:"w-full bg-neutral-800 text-white rounded py-1.5",children:"\uC800\uC7A5 \uBC0F \uB3D9\uAE30\uD654 \uCF1C\uAE30"})]}),of&&(0,v.jsx)("p",{className:"text-neutral-500 mt-1.5 text-center",children:of})]})]}),(0,v.jsx)("a",{href:"https://blog.naver.com/bgroh",target:"_blank",rel:"noopener noreferrer",className:"text-[10px] text-neutral-400 hover:text-neutral-600 mt-3 text-center",children:"RBG Tools - Daily Planner V3.4"}),(0,v.jsx)("p",{className:"text-[10px] text-neutral-400 mt-2",children:"\uB370\uC774\uD130\uB294 \uC774 \uAE30\uAE30\uC758 \uC774 \uC571 \uC548\uC5D0 \uB0A0\uC9DC\uBCC4\uB85C \uC790\uB3D9 \uC800\uC7A5\uB429\uB2C8\uB2E4."}),zoomImg&&(0,v.jsx)("div",{onClick:()=>setZoomImg(null),style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:16},children:(0,v.jsxs)("div",{onClick:e=>e.stopPropagation(),style:{position:"relative",maxWidth:"100%",maxHeight:"100%"},children:[(0,v.jsx)("img",{src:zoomImg,style:{maxWidth:"100%",maxHeight:"90vh",objectFit:"contain",borderRadius:4}}),(0,v.jsx)("button",{onClick:()=>setZoomImg(null),style:{position:"absolute",top:-14,right:-14,background:"#000",color:"#fff",borderRadius:"9999px",width:28,height:28,fontSize:16,lineHeight:"28px",border:"2px solid #fff"},children:"\u00D7"})]})})]})}var BS=(0,Uy.createRoot)(document.getElementById("root"));BS.render(By.default.createElement(Xd));})();
+};`,rows:6,className:"w-full border border-neutral-300 rounded p-2 text-[10px] font-mono resize-y"}),(0,v.jsx)("button",{onClick:Ky,className:"w-full bg-neutral-800 text-white rounded py-1.5",children:"\uC800\uC7A5 \uBC0F \uB3D9\uAE30\uD654 \uCF1C\uAE30"})]}),of&&(0,v.jsx)("p",{className:"text-neutral-500 mt-1.5 text-center",children:of})]})]}),(0,v.jsx)("a",{href:"https://blog.naver.com/bgroh",target:"_blank",rel:"noopener noreferrer",className:"text-[10px] text-neutral-400 hover:text-neutral-600 mt-3 text-center",children:"RBG Tools - Daily Planner V3.5"}),(0,v.jsx)("p",{className:"text-[10px] text-neutral-400 mt-2",children:"\uB370\uC774\uD130\uB294 \uC774 \uAE30\uAE30\uC758 \uC774 \uC571 \uC548\uC5D0 \uB0A0\uC9DC\uBCC4\uB85C \uC790\uB3D9 \uC800\uC7A5\uB429\uB2C8\uB2E4."}),zoomImg&&(0,v.jsx)("div",{onClick:()=>setZoomImg(null),style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:16},children:(0,v.jsxs)("div",{onClick:e=>e.stopPropagation(),style:{position:"relative",maxWidth:"100%",maxHeight:"100%"},children:[(0,v.jsx)("img",{src:zoomImg,style:{maxWidth:"100%",maxHeight:"90vh",objectFit:"contain",borderRadius:4}}),(0,v.jsx)("button",{onClick:()=>setZoomImg(null),style:{position:"absolute",top:-14,right:-14,background:"#000",color:"#fff",borderRadius:"9999px",width:28,height:28,fontSize:16,lineHeight:"28px",border:"2px solid #fff"},children:"\u00D7"})]})})]})}var BS=(0,Uy.createRoot)(document.getElementById("root"));BS.render(By.default.createElement(Xd));})();
 /*! Bundled license information:
 
 react/cjs/react.production.min.js:
@@ -521,6 +521,31 @@ firebase/app/dist/esm/index.esm.js:
     dt.setDate(dt.getDate() - 1);
     return dt.getFullYear() + "-" + pad2(dt.getMonth() + 1) + "-" + pad2(dt.getDate());
   }
+  function addDaysStr(dateStr, n) {
+    var p = dateStr.split("-").map(Number);
+    var dt = new Date(p[0], p[1] - 1, p[2]);
+    dt.setDate(dt.getDate() + n);
+    return dt.getFullYear() + "-" + pad2(dt.getMonth() + 1) + "-" + pad2(dt.getDate());
+  }
+  function getTodayStr() {
+    var d = new Date();
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+  // 월요일을 주의 시작으로 보는 해당 날짜가 속한 주의 월요일 날짜 문자열
+  function mondayOfWeek(dateStr) {
+    var p = dateStr.split("-").map(Number);
+    var dt = new Date(p[0], p[1] - 1, p[2]);
+    var dow = dt.getDay(); // 0=일 1=월 ... 6=토
+    var diffToMon = dow === 0 ? -6 : 1 - dow;
+    dt.setDate(dt.getDate() + diffToMon);
+    return dt.getFullYear() + "-" + pad2(dt.getMonth() + 1) + "-" + pad2(dt.getDate());
+  }
+  var WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
+  function weekdayIdx(dateStr) {
+    var p = dateStr.split("-").map(Number);
+    return new Date(p[0], p[1] - 1, p[2]).getDay(); // 0=일 ... 6=토
+  }
+  function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); } // m: 1~12
   function esc(s) {
     var d = document.createElement("div");
     d.textContent = s == null ? "" : String(s);
@@ -533,7 +558,11 @@ firebase/app/dist/esm/index.esm.js:
     day: function (d) { return "day:" + d; },
     planGoals: "lyv_planGoals_v1",
     monthlyReview: "lyv_monthlyReview_v1",
-    taskLog: function (d) { return "lyv_taskLog_v1:" + d; }
+    taskLog: function (d) { return "lyv_taskLog_v1:" + d; },
+    todos: "lyv_todos_v1",
+    weekGoals: "lyv_weekGoals_v1",
+    reminderSettings: "lyv_reminderSettings_v1",
+    reminderLog: "lyv_reminderLog_v1"
   };
 
   function readJSON(key, fallback) {
@@ -670,6 +699,25 @@ firebase/app/dist/esm/index.esm.js:
     return { catMinutes: catMinutes, sleepMinutes: sleepMinutes, unrecordedMinutes: unrecordedMinutes, dayCount: dayCount, months: months };
   }
 
+  // 월요일 시작 기준 7일치 합산 (일별 기록률 포함)
+  function sumWeek(mondayStr) {
+    var catMinutes = {}, sleepMinutes = 0, unrecordedMinutes = 0, dayCount = 0;
+    var perDay = [];
+    for (var i = 0; i < 7; i++) {
+      var ds = addDaysStr(mondayStr, i);
+      var dd = getDayData(ds);
+      var a = analyzeDay(dd, getSleepCarryIn(ds));
+      if (dd) dayCount++;
+      Object.keys(a.catMinutes).forEach(function (cid) { catMinutes[cid] = (catMinutes[cid] || 0) + a.catMinutes[cid]; });
+      sleepMinutes += a.sleepMinutes;
+      unrecordedMinutes += a.unrecordedMinutes;
+      var totCat = 0;
+      Object.keys(a.catMinutes).forEach(function (cid) { totCat += a.catMinutes[cid]; });
+      perDay.push({ date: ds, recordedMin: totCat + a.sleepMinutes, hasData: !!dd });
+    }
+    return { catMinutes: catMinutes, sleepMinutes: sleepMinutes, unrecordedMinutes: unrecordedMinutes, dayCount: dayCount, perDay: perDay };
+  }
+
   /* ============================================================
    * 현재 표시 중인 날짜 추적 (기존 앱 헤더를 읽기만 함 - React 트리 비수정)
    * ========================================================== */
@@ -706,12 +754,28 @@ firebase/app/dist/esm/index.esm.js:
         '<div id="lyv-status-body"></div>' +
       '</div>' +
 
+      '<div class="bg-white border border-neutral-300 rounded-sm shadow-sm p-3 mb-3">' +
+        '<button id="lyv-reminder-toggle" class="w-full flex items-center justify-between text-[13px] font-bold text-neutral-800">' +
+          '<span>\u{1F514} 리마인더</span><span id="lyv-reminder-caret" class="text-neutral-400 text-[10px] font-normal">펼치기 ▾</span>' +
+        '</button>' +
+        '<div id="lyv-reminder-body" class="hidden mt-2"></div>' +
+      '</div>' +
+
+      '<div class="bg-white border border-neutral-300 rounded-sm shadow-sm p-3 mb-3">' +
+        '<button id="lyv-search-toggle" class="w-full flex items-center justify-between text-[13px] font-bold text-neutral-800">' +
+          '<span>\u{1F50D} 기록 검색</span><span id="lyv-search-caret" class="text-neutral-400 text-[10px] font-normal">펼치기 ▾</span>' +
+        '</button>' +
+        '<div id="lyv-search-body" class="hidden mt-2"></div>' +
+      '</div>' +
+
       '<div class="bg-white border border-neutral-300 rounded-sm shadow-sm mb-3 overflow-hidden">' +
-        '<div class="grid grid-cols-4 text-[11px] font-bold" id="lyv-tabs">' +
+        '<div class="grid grid-cols-3 text-[11px] font-bold" id="lyv-tabs">' +
+          '<button data-tab="todo" class="py-2 border-r border-b border-neutral-300">할일</button>' +
           '<button data-tab="plan" class="py-2 border-r border-b border-neutral-300">계획대비실적</button>' +
+          '<button data-tab="week" class="py-2 border-r border-b border-neutral-300">주간정리</button>' +
           '<button data-tab="year" class="py-2 border-r border-b border-neutral-300">연간정리</button>' +
           '<button data-tab="est" class="py-2 border-r border-b border-neutral-300">예상·실제</button>' +
-          '<button data-tab="review" class="py-2 border-b border-neutral-300">월간회고</button>' +
+          '<button data-tab="review" class="py-2 border-r border-b border-neutral-300">월간회고</button>' +
         '</div>' +
         '<div class="p-3" id="lyv-tab-body"></div>' +
       '</div>' +
@@ -721,10 +785,28 @@ firebase/app/dist/esm/index.esm.js:
 
   document.body.appendChild(wrap);
 
-  var activeTab = "plan";
+  var activeTab = "todo";
   var planMonth = null; // YYYY-MM, lazily set to displayed month
   var yearSel = null; // YYYY
+  var weekStart = null; // YYYY-MM-DD (월요일), lazily set from displayed date
   var reviewSaveTimer = null;
+
+  document.getElementById("lyv-reminder-toggle").addEventListener("click", function () {
+    var body = document.getElementById("lyv-reminder-body");
+    var caret = document.getElementById("lyv-reminder-caret");
+    var willOpen = body.classList.contains("hidden");
+    body.classList.toggle("hidden");
+    caret.textContent = willOpen ? "접기 ▴" : "펼치기 ▾";
+    if (willOpen) renderReminderPanel();
+  });
+  document.getElementById("lyv-search-toggle").addEventListener("click", function () {
+    var body = document.getElementById("lyv-search-body");
+    var caret = document.getElementById("lyv-search-caret");
+    var willOpen = body.classList.contains("hidden");
+    body.classList.toggle("hidden");
+    caret.textContent = willOpen ? "접기 ▴" : "펼치기 ▾";
+    if (willOpen) renderSearchPanel();
+  });
 
   /* ------------------------------------------------------------
    * 카드 1: 오늘의 기록 현황 (미기록 시간 확인)
@@ -771,6 +853,106 @@ firebase/app/dist/esm/index.esm.js:
     html += '<div class="text-[9px] text-neutral-400 flex justify-between"><span>00:00</span><span>12:00</span><span>23:45</span></div>';
 
     body.innerHTML = html;
+  }
+
+  /* ------------------------------------------------------------
+   * 카드 2-0: 할 일 목록 (사전 계획 - 마감일/우선순위/완료체크)
+   * ---------------------------------------------------------- */
+  function priorityLabel(p) { return p === "high" ? "높음" : p === "low" ? "낮음" : "보통"; }
+  function priorityColor(p) { return p === "high" ? "#e11d48" : p === "low" ? "#a3a3a3" : "#f59e0b"; }
+  function priorityWeight(p) { return p === "high" ? 0 : p === "low" ? 2 : 1; }
+
+  function renderTodoTab(dateStr) {
+    var todos = readJSON(LS.todos, []);
+    var todayStr = getTodayStr();
+
+    var html = "";
+    html += '<div class="text-[12px] font-bold mb-1">할 일 목록</div>';
+    html += '<div class="text-[10px] text-neutral-400 mb-2">마감일·우선순위를 정해두면 상단에 자동 정렬됩니다. "예상표로" 버튼을 누르면 오늘(' + dateStr + ') 예상·실제 탭으로 항목이 복사됩니다.</div>';
+
+    html += '<div class="flex flex-wrap gap-1 mb-2">';
+    html += '<input type="text" id="lyv-todo-text" placeholder="할 일" class="flex-1 min-w-[92px] border border-neutral-300 rounded-sm px-1.5 py-1 text-[11px]">';
+    html += '<input type="date" id="lyv-todo-due" class="border border-neutral-300 rounded-sm px-1 py-1 text-[11px]">';
+    html += '<select id="lyv-todo-priority" class="border border-neutral-300 rounded-sm px-1 py-1 text-[11px]">';
+    html += '<option value="med">보통</option><option value="high">높음</option><option value="low">낮음</option>';
+    html += '</select>';
+    html += '<button id="lyv-todo-add-btn" class="px-2 py-1 border border-neutral-300 rounded-sm text-[11px] hover:bg-neutral-100">추가</button>';
+    html += '</div>';
+
+    var sorted = todos.slice().sort(function (a, b) {
+      if (!!a.done !== !!b.done) return a.done ? 1 : -1;
+      var pw = priorityWeight(a.priority) - priorityWeight(b.priority);
+      if (pw !== 0) return pw;
+      var ad = a.due || "9999-99-99", bd = b.due || "9999-99-99";
+      return ad < bd ? -1 : ad > bd ? 1 : 0;
+    });
+
+    if (!sorted.length) {
+      html += '<div class="text-[11px] text-neutral-400 text-center py-3">등록된 할 일이 없습니다.</div>';
+    } else {
+      html += '<div class="space-y-1.5">';
+      sorted.forEach(function (t) {
+        var overdue = !t.done && t.due && t.due < todayStr;
+        var dueLabel = t.due ? t.due.slice(5) : "";
+        html += '<div class="flex items-center gap-1.5 text-[11px] border border-neutral-200 rounded-sm px-1.5 py-1' + (t.done ? " opacity-50" : "") + '">';
+        html += '<input type="checkbox" data-todo-toggle="' + t.id + '"' + (t.done ? " checked" : "") + '>';
+        html += '<span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:' + priorityColor(t.priority) + '" title="' + priorityLabel(t.priority) + '"></span>';
+        html += '<span class="flex-1 min-w-0 truncate' + (t.done ? " line-through" : "") + '">' + esc(t.text) + '</span>';
+        if (dueLabel) html += '<span class="shrink-0 ' + (overdue ? "text-rose-500 font-bold" : "text-neutral-400") + '">' + esc(dueLabel) + '</span>';
+        if (!t.done) html += '<button data-todo-toest="' + t.id + '" class="shrink-0 text-neutral-400 hover:text-black px-1">예상표로</button>';
+        html += '<button data-todo-del="' + t.id + '" class="shrink-0 text-neutral-400 hover:text-rose-500 px-1">삭제</button>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    document.getElementById("lyv-tab-body").innerHTML = html;
+
+    function persist(list) { writeJSON(LS.todos, list); }
+
+    document.getElementById("lyv-todo-add-btn").addEventListener("click", function () {
+      var textEl = document.getElementById("lyv-todo-text");
+      var dueEl = document.getElementById("lyv-todo-due");
+      var prEl = document.getElementById("lyv-todo-priority");
+      var text = textEl.value.trim();
+      if (!text) return;
+      var list = readJSON(LS.todos, []);
+      list.push({ id: "t" + Date.now() + Math.random().toString(36).slice(2, 7), text: text, due: dueEl.value || "", priority: prEl.value || "med", done: false, createdAt: todayStr });
+      persist(list);
+      renderTodoTab(dateStr);
+    });
+    document.querySelectorAll("[data-todo-toggle]").forEach(function (cb) {
+      cb.addEventListener("change", function () {
+        var list = readJSON(LS.todos, []);
+        var id = cb.getAttribute("data-todo-toggle");
+        var t = list.filter(function (x) { return x.id === id; })[0];
+        if (t) t.done = cb.checked;
+        persist(list);
+        renderTodoTab(dateStr);
+      });
+    });
+    document.querySelectorAll("[data-todo-del]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-todo-del");
+        var list = readJSON(LS.todos, []).filter(function (x) { return x.id !== id; });
+        persist(list);
+        renderTodoTab(dateStr);
+      });
+    });
+    document.querySelectorAll("[data-todo-toest]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-todo-toest");
+        var list = readJSON(LS.todos, []);
+        var t = list.filter(function (x) { return x.id === id; })[0];
+        if (!t) return;
+        var estList = readJSON(LS.taskLog(dateStr), []);
+        estList.push({ name: t.text, estMin: "", actMin: "" });
+        writeJSON(LS.taskLog(dateStr), estList);
+        btn.textContent = "옮김완료";
+        btn.setAttribute("disabled", "disabled");
+        btn.className = "shrink-0 text-neutral-300 px-1";
+      });
+    });
   }
 
   /* ------------------------------------------------------------
@@ -856,6 +1038,99 @@ firebase/app/dist/esm/index.esm.js:
   }
 
   /* ------------------------------------------------------------
+   * 카드 2-a2: 주간 정리 (월요일 시작 - 일별 기록률 + 주간 목표 대비 실적)
+   * ---------------------------------------------------------- */
+  function renderWeekTab(dateStr) {
+    if (!weekStart) weekStart = mondayOfWeek(dateStr);
+    var cats = getCategories();
+    var w = sumWeek(weekStart);
+    var weekEnd = addDaysStr(weekStart, 6);
+    var totalCatMin = 0;
+    Object.keys(w.catMinutes).forEach(function (k) { totalCatMin += w.catMinutes[k]; });
+    var totalWithSleep = totalCatMin + w.sleepMinutes;
+
+    var goalsAll = readJSON(LS.weekGoals, {});
+    var goals = goalsAll[weekStart] || {};
+
+    var html = "";
+    html += '<div class="flex items-center justify-center gap-3 mb-2">';
+    html += '<button data-week-nav="-1" class="text-neutral-500 hover:text-black px-2">◁</button>';
+    html += '<div class="text-[12px] font-bold">' + weekStart + ' ~ ' + weekEnd + '</div>';
+    html += '<button data-week-nav="1" class="text-neutral-500 hover:text-black px-2">▷</button>';
+    html += '</div>';
+    html += '<div class="text-[10px] text-neutral-400 mb-2">기록된 날 ' + w.dayCount + '/7일 · 분류+수면 합계 ' + fmtHM(totalWithSleep) + '</div>';
+
+    // 요일별 기록률 미니 바
+    html += '<div class="flex items-end gap-1 h-12 mb-3">';
+    w.perDay.forEach(function (d) {
+      var pct = Math.round((d.recordedMin / 1440) * 100);
+      var wd = weekdayIdx(d.date);
+      var barColor = pct >= 70 ? "#B2CFEB" : pct >= 30 ? "#EBE2B2" : "#EBB2B2";
+      html += '<div class="flex-1 flex flex-col items-center justify-end h-full">';
+      html += '<div class="w-full rounded-t-sm" style="height:' + clamp(pct, 2, 100) + '%;background:' + barColor + '" title="' + d.date + ' ' + pct + '%"></div>';
+      html += '<div class="text-[9px] text-neutral-400 mt-0.5">' + WEEKDAY_LABELS[wd] + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // 카테고리 + 수면 목표 대비 실적 (계획대비실적 탭과 동일한 패턴, 주간 단위)
+    html += '<div class="space-y-2">';
+    cats.forEach(function (c) {
+      var goalMin = (goals[c.id] || 0) * 60;
+      var actMin = w.catMinutes[c.id] || 0;
+      var ratio = goalMin > 0 ? clamp((actMin / goalMin) * 100, 0, 999) : null;
+      html += '<div>';
+      html += '<div class="flex items-center gap-2 text-[11px] mb-0.5">';
+      html += '<span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:' + c.color + '"></span>';
+      html += '<span class="w-14 shrink-0 truncate">' + esc(c.name) + '</span>';
+      html += '<input type="number" min="0" step="0.5" data-weekgoal-cat="' + c.id + '" value="' + (goals[c.id] || "") + '" placeholder="목표(h)" class="w-16 border border-neutral-300 rounded-sm px-1 py-0.5 text-[11px]">';
+      html += '<span class="text-neutral-400">h →</span>';
+      html += '<span class="flex-1 text-right font-bold">' + fmtHM(actMin) + (ratio !== null ? ' <span class="text-neutral-400 font-normal">(' + Math.round(ratio) + '%)</span>' : '') + '</span>';
+      html += '</div>';
+      if (goalMin > 0) html += '<div class="w-full h-1.5 bg-neutral-100 rounded-sm overflow-hidden"><div style="width:' + clamp(ratio, 0, 100) + '%;background:' + c.color + '" class="h-full"></div></div>';
+      html += '</div>';
+    });
+    (function () {
+      var goalMin = (goals[SLEEP_PSEUDO_ID] || 0) * 60;
+      var actMin = w.sleepMinutes || 0;
+      var ratio = goalMin > 0 ? clamp((actMin / goalMin) * 100, 0, 999) : null;
+      html += '<div>';
+      html += '<div class="flex items-center gap-2 text-[11px] mb-0.5">';
+      html += '<span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:' + SLEEP_COLOR + '"></span>';
+      html += '<span class="w-14 shrink-0 truncate">' + esc(SLEEP_NAME) + '</span>';
+      html += '<input type="number" min="0" step="0.5" data-weekgoal-cat="' + SLEEP_PSEUDO_ID + '" value="' + (goals[SLEEP_PSEUDO_ID] || "") + '" placeholder="목표(h)" class="w-16 border border-neutral-300 rounded-sm px-1 py-0.5 text-[11px]">';
+      html += '<span class="text-neutral-400">h →</span>';
+      html += '<span class="flex-1 text-right font-bold">' + fmtHM(actMin) + (ratio !== null ? ' <span class="text-neutral-400 font-normal">(' + Math.round(ratio) + '%)</span>' : '') + '</span>';
+      html += '</div>';
+      if (goalMin > 0) html += '<div class="w-full h-1.5 bg-neutral-100 rounded-sm overflow-hidden"><div style="width:' + clamp(ratio, 0, 100) + '%;background:' + SLEEP_COLOR + '" class="h-full"></div></div>';
+      html += '</div>';
+    })();
+    html += '</div>';
+
+    document.getElementById("lyv-tab-body").innerHTML = html;
+
+    document.querySelectorAll("[data-week-nav]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var d = parseInt(btn.getAttribute("data-week-nav"), 10);
+        weekStart = addDaysStr(weekStart, d * 7);
+        renderWeekTab(getDisplayedDateStr());
+      });
+    });
+    document.querySelectorAll("[data-weekgoal-cat]").forEach(function (inp) {
+      inp.addEventListener("change", function () {
+        var goalsAll2 = readJSON(LS.weekGoals, {});
+        var g = goalsAll2[weekStart] || {};
+        var v = parseFloat(inp.value);
+        if (isNaN(v) || v <= 0) delete g[inp.getAttribute("data-weekgoal-cat")];
+        else g[inp.getAttribute("data-weekgoal-cat")] = v;
+        goalsAll2[weekStart] = g;
+        writeJSON(LS.weekGoals, goalsAll2);
+        renderWeekTab(getDisplayedDateStr());
+      });
+    });
+  }
+
+  /* ------------------------------------------------------------
    * 카드 2-b: 연간 정리
    * ---------------------------------------------------------- */
   function renderYearTab(dateStr) {
@@ -915,6 +1190,91 @@ firebase/app/dist/esm/index.esm.js:
     html += '<div class="flex gap-1 text-[9px] text-neutral-400">';
     for (var m3 = 1; m3 <= 12; m3++) html += '<div class="flex-1 text-center">' + m3 + '</div>';
     html += '</div>';
+
+    // 히트맵 캘린더 + 요일별 패턴을 위해 연도 전체를 한 번에 순회 (일별 기록률 계산 재사용)
+    var wdTotals = [0, 0, 0, 0, 0, 0, 0], wdCounts = [0, 0, 0, 0, 0, 0, 0];
+    var heatRows = [];
+    for (var hm = 1; hm <= 12; hm++) {
+      var dim = daysInMonth(parseInt(yearSel, 10), hm);
+      var row = [];
+      for (var hd = 1; hd <= 31; hd++) {
+        if (hd > dim) { row.push(null); continue; }
+        var hds = yearSel + "-" + pad2(hm) + "-" + pad2(hd);
+        var hdd = getDayData(hds);
+        if (!hdd) { row.push({ date: hds, pct: null }); continue; }
+        var ha = analyzeDay(hdd, getSleepCarryIn(hds));
+        var htot = 0;
+        Object.keys(ha.catMinutes).forEach(function (cid) { htot += ha.catMinutes[cid]; });
+        var hpctv = Math.round(((htot + ha.sleepMinutes) / 1440) * 100);
+        row.push({ date: hds, pct: hpctv });
+        var widx = weekdayIdx(hds);
+        wdTotals[widx] += hpctv;
+        wdCounts[widx]++;
+      }
+      heatRows.push(row);
+    }
+
+    // 히트맵 캘린더 (일별 기록률 %)
+    html += '<div class="text-[10px] text-neutral-400 mb-1 mt-3">기록 밀도 히트맵 (하루 기록률 %)</div>';
+    html += '<div class="space-y-[2px] mb-1">';
+    heatRows.forEach(function (row, ri) {
+      html += '<div class="flex items-center gap-1">';
+      html += '<span class="w-6 shrink-0 text-[8px] text-neutral-400">' + (ri + 1) + '월</span>';
+      html += '<div class="flex-1 flex gap-[2px]">';
+      row.forEach(function (cell) {
+        if (cell === null) { html += '<div class="flex-1"></div>'; return; }
+        if (cell.pct === null) {
+          html += '<div class="flex-1 rounded-[1px]" style="height:6px;background:#eeeeec" title="' + cell.date + ': 기록 없음"></div>';
+        } else {
+          var alpha = (0.12 + (clamp(cell.pct, 0, 100) / 100) * 0.85).toFixed(2);
+          html += '<div class="flex-1 rounded-[1px]" style="height:6px;background:rgba(59,130,246,' + alpha + ')" title="' + cell.date + ': ' + cell.pct + '%"></div>';
+        }
+      });
+      html += '</div></div>';
+    });
+    html += '</div>';
+    html += '<div class="text-[9px] text-neutral-400 flex items-center gap-1 mb-3">';
+    html += '<span>기록률 낮음</span><span class="inline-block" style="width:10px;height:10px;background:rgba(59,130,246,0.12)"></span><span class="inline-block" style="width:10px;height:10px;background:rgba(59,130,246,0.5)"></span><span class="inline-block" style="width:10px;height:10px;background:rgba(59,130,246,0.97)"></span><span>높음</span>';
+    html += '</div>';
+
+    // 요일별 평균 기록률
+    html += '<div class="text-[10px] text-neutral-400 mb-1">요일별 평균 기록률</div>';
+    html += '<div class="flex items-end gap-1 h-14 mb-1">';
+    for (var wi = 0; wi < 7; wi++) {
+      var avgPct = wdCounts[wi] > 0 ? Math.round(wdTotals[wi] / wdCounts[wi]) : 0;
+      html += '<div class="flex-1 flex flex-col items-center justify-end h-full">';
+      html += '<div class="w-full bg-[#CFB2EB] rounded-t-sm" style="height:' + clamp(avgPct, 2, 100) + '%" title="' + WEEKDAY_LABELS[wi] + '요일 평균 ' + avgPct + '% (표본 ' + wdCounts[wi] + '일)"></div>';
+      html += '</div>';
+    }
+    html += '</div>';
+    html += '<div class="flex gap-1 text-[9px] text-neutral-400 mb-3">';
+    for (var wi2 = 0; wi2 < 7; wi2++) html += '<div class="flex-1 text-center">' + WEEKDAY_LABELS[wi2] + '</div>';
+    html += '</div>';
+
+    // 전년 대비 비교
+    var prevYear = String(parseInt(yearSel, 10) - 1);
+    var yPrev = sumYear(prevYear);
+    html += '<div class="text-[10px] text-neutral-400 mb-1">' + prevYear + '년 대비 비교 (전년 기록된 날 ' + yPrev.dayCount + '일)</div>';
+    if (yPrev.dayCount === 0) {
+      html += '<div class="text-[11px] text-neutral-400">' + prevYear + '년 기록이 없어 비교할 수 없습니다.</div>';
+    } else {
+      var compItems = cats.map(function (c) { return { name: c.name, color: c.color, cur: y.catMinutes[c.id] || 0, prev: yPrev.catMinutes[c.id] || 0 }; });
+      compItems.push({ name: SLEEP_NAME, color: SLEEP_COLOR, cur: y.sleepMinutes, prev: yPrev.sleepMinutes });
+      compItems = compItems.filter(function (it) { return it.cur > 0 || it.prev > 0; });
+      compItems.sort(function (a, b) { return b.cur - a.cur; });
+      html += '<div class="space-y-1">';
+      compItems.forEach(function (it) {
+        var diff = it.cur - it.prev;
+        var diffStr = diff === 0 ? "-" : (diff > 0 ? "+" + fmtHM(diff) : "-" + fmtHM(-diff));
+        html += '<div class="flex items-center gap-2 text-[11px]">';
+        html += '<span class="inline-block w-2.5 h-2.5 rounded-sm shrink-0" style="background:' + it.color + '"></span>';
+        html += '<span class="w-14 shrink-0 truncate">' + esc(it.name) + '</span>';
+        html += '<span class="flex-1 text-right text-neutral-400">' + fmtHM(it.prev) + ' → ' + fmtHM(it.cur) + '</span>';
+        html += '<span class="w-16 text-right font-bold text-neutral-700">' + diffStr + '</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
 
     document.getElementById("lyv-tab-body").innerHTML = html;
 
@@ -1047,7 +1407,9 @@ firebase/app/dist/esm/index.esm.js:
       var on = b.getAttribute("data-tab") === activeTab;
       b.className = "py-2 border-r border-b border-neutral-300" + (on ? " bg-black text-white" : " bg-white text-neutral-600 hover:bg-neutral-100");
     });
-    if (activeTab === "plan") renderPlanTab(dateStr);
+    if (activeTab === "todo") renderTodoTab(dateStr);
+    else if (activeTab === "plan") renderPlanTab(dateStr);
+    else if (activeTab === "week") renderWeekTab(dateStr);
     else if (activeTab === "year") renderYearTab(dateStr);
     else if (activeTab === "est") renderEstTab(dateStr);
     else if (activeTab === "review") renderReviewTab(dateStr);
@@ -1060,6 +1422,210 @@ firebase/app/dist/esm/index.esm.js:
     renderTabBody(getDisplayedDateStr());
   });
 
+  /* ------------------------------------------------------------
+   * 기록 검색 - 전체 날짜의 15분 칸 텍스트 / 날씨·특이사항 / 메모에서 키워드 검색
+   * ---------------------------------------------------------- */
+  function searchAllDays(keyword) {
+    var kw = keyword.trim().toLowerCase();
+    var results = [];
+    if (!kw) return results;
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (!k || k.indexOf("day:") !== 0) continue;
+      var dateStr = k.slice(4);
+      var day = readJSON(k, null);
+      if (!day) continue;
+      if (day.hourData) {
+        Object.keys(day.hourData).forEach(function (h) {
+          (day.hourData[h].quarters || []).forEach(function (q, qi) {
+            var text = q.text || "";
+            if (text.toLowerCase().indexOf(kw) !== -1) {
+              results.push({ date: dateStr, time: pad2(Number(h)) + ":" + pad2(qi * 15), text: text, categoryId: q.categoryId || "", field: "quarter" });
+            }
+          });
+        });
+      }
+      if (day.remark && String(day.remark).toLowerCase().indexOf(kw) !== -1) {
+        results.push({ date: dateStr, time: "", text: String(day.remark), categoryId: "", field: "remark" });
+      }
+      if (day.note && String(day.note).toLowerCase().indexOf(kw) !== -1) {
+        results.push({ date: dateStr, time: "", text: String(day.note), categoryId: "", field: "note" });
+      }
+    }
+    results.sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : (a.time < b.time ? 1 : -1); });
+    return results;
+  }
+
+  function renderSearchPanel() {
+    var body = document.getElementById("lyv-search-body");
+    if (!body) return;
+    var html = "";
+    html += '<div class="flex gap-1 mb-2">';
+    html += '<input type="text" id="lyv-search-input" placeholder="검색어 입력 (예: 회의)" class="flex-1 min-w-0 border border-neutral-300 rounded-sm px-1.5 py-1 text-[11px]">';
+    html += '<button id="lyv-search-btn" class="px-2 py-1 border border-neutral-300 rounded-sm text-[11px] hover:bg-neutral-100">검색</button>';
+    html += '</div>';
+    html += '<div id="lyv-search-results" class="text-[11px] text-neutral-400">검색어를 입력하고 검색을 눌러주세요. 모든 날짜의 15분 칸·날씨/특이사항·메모를 대상으로 찾습니다.</div>';
+    body.innerHTML = html;
+
+    var cats = getCategories();
+    function runSearch() {
+      var kw = document.getElementById("lyv-search-input").value;
+      var resultsEl = document.getElementById("lyv-search-results");
+      if (!kw.trim()) { resultsEl.innerHTML = '<div class="text-neutral-400">검색어를 입력해주세요.</div>'; return; }
+      var results = searchAllDays(kw);
+      if (!results.length) { resultsEl.innerHTML = '<div class="text-neutral-400">일치하는 기록이 없습니다.</div>'; return; }
+      var capped = results.slice(0, 200);
+      var rhtml = '<div class="text-neutral-400 mb-1">' + results.length + '건 찾음' + (results.length > 200 ? " (최근 200건만 표시)" : "") + ' — 아래 날짜로 플래너에서 직접 이동해 확인하세요.</div>';
+      rhtml += '<div class="space-y-1 max-h-56 overflow-y-auto">';
+      capped.forEach(function (r) {
+        var fieldLabel = r.field === "remark" ? "날씨" : r.field === "note" ? "메모" : (r.time || "");
+        var dot = r.categoryId ? '<span class="inline-block w-2 h-2 rounded-sm shrink-0" style="background:' + catColor(r.categoryId, cats) + '"></span>' : '<span class="inline-block w-2 h-2 shrink-0"></span>';
+        rhtml += '<div class="flex items-center gap-1.5 border-b border-neutral-100 pb-1">';
+        rhtml += dot;
+        rhtml += '<span class="w-16 shrink-0 text-neutral-400">' + esc(r.date) + '</span>';
+        rhtml += '<span class="w-9 shrink-0 text-neutral-400">' + esc(fieldLabel) + '</span>';
+        rhtml += '<span class="flex-1 min-w-0 truncate" title="' + esc(r.text) + '">' + esc(r.text) + '</span>';
+        rhtml += '</div>';
+      });
+      rhtml += '</div>';
+      resultsEl.innerHTML = rhtml;
+    }
+
+    document.getElementById("lyv-search-btn").addEventListener("click", runSearch);
+    document.getElementById("lyv-search-input").addEventListener("keydown", function (e) { if (e.key === "Enter") runSearch(); });
+  }
+
+  /* ------------------------------------------------------------
+   * 리마인더 (브라우저 알림) - 취침 기록 누락 / 목표 카테고리 장기 미기록 / 할일 마감
+   * ---------------------------------------------------------- */
+  var DEFAULT_REMINDER_SETTINGS = { enabled: false, sleepHour: 23, gapDays: 3 };
+
+  function renderReminderPanel() {
+    var body = document.getElementById("lyv-reminder-body");
+    if (!body) return;
+    var settings = readJSON(LS.reminderSettings, DEFAULT_REMINDER_SETTINGS);
+    var supported = ("Notification" in window);
+    var perm = supported ? Notification.permission : "unsupported";
+
+    var html = "";
+    html += '<div class="text-[10px] text-neutral-400 mb-2">브라우저 알림으로 ① 취침 기록 누락 ② 목표를 세워둔 카테고리의 장기 미기록 ③ 오늘 마감인 할 일을 알려드립니다. 이 페이지(탭)를 열어둔 상태에서만 동작합니다.</div>';
+
+    if (!supported) {
+      html += '<div class="text-[11px] text-rose-500">이 브라우저는 알림 기능을 지원하지 않습니다.</div>';
+    } else {
+      html += '<div class="flex items-center justify-between text-[11px] mb-2">';
+      html += '<span>알림 권한: <b>' + (perm === "granted" ? "허용됨" : perm === "denied" ? "차단됨(브라우저 설정에서 해제 필요)" : "미설정") + '</b></span>';
+      if (perm !== "granted") html += '<button id="lyv-reminder-permit" class="px-2 py-1 border border-neutral-300 rounded-sm hover:bg-neutral-100">알림 켜기</button>';
+      html += '</div>';
+
+      html += '<label class="flex items-center gap-1.5 text-[11px] mb-2"><input type="checkbox" id="lyv-reminder-enabled"' + (settings.enabled ? " checked" : "") + '> 리마인더 활성화</label>';
+
+      html += '<div class="flex items-center gap-1.5 text-[11px] mb-1.5"><span class="w-20 shrink-0">취침 알림</span><input type="number" min="0" max="23" id="lyv-reminder-sleephour" value="' + settings.sleepHour + '" class="w-12 border border-neutral-300 rounded-sm px-1 py-0.5"><span class="text-neutral-400">시 이후에도 취침 기록 없으면 알림</span></div>';
+      html += '<div class="flex items-center gap-1.5 text-[11px] mb-2"><span class="w-20 shrink-0">공백 기준</span><input type="number" min="1" max="30" id="lyv-reminder-gapdays" value="' + settings.gapDays + '" class="w-12 border border-neutral-300 rounded-sm px-1 py-0.5"><span class="text-neutral-400">일 이상 미기록이면 알림(목표 설정된 카테고리만)</span></div>';
+
+      if (perm === "granted") html += '<button id="lyv-reminder-test" class="w-full py-1.5 border border-neutral-300 rounded-sm text-[11px] hover:bg-neutral-100">테스트 알림 보내기</button>';
+    }
+
+    body.innerHTML = html;
+
+    function saveSettings(patch) {
+      var s = readJSON(LS.reminderSettings, DEFAULT_REMINDER_SETTINGS);
+      Object.keys(patch).forEach(function (k) { s[k] = patch[k]; });
+      writeJSON(LS.reminderSettings, s);
+    }
+    var permitBtn = document.getElementById("lyv-reminder-permit");
+    if (permitBtn) permitBtn.addEventListener("click", function () {
+      Notification.requestPermission().then(function () { renderReminderPanel(); });
+    });
+    var enabledCb = document.getElementById("lyv-reminder-enabled");
+    if (enabledCb) enabledCb.addEventListener("change", function () { saveSettings({ enabled: enabledCb.checked }); });
+    var sleepHourInp = document.getElementById("lyv-reminder-sleephour");
+    if (sleepHourInp) sleepHourInp.addEventListener("change", function () { saveSettings({ sleepHour: clamp(parseInt(sleepHourInp.value, 10) || 23, 0, 23) }); });
+    var gapDaysInp = document.getElementById("lyv-reminder-gapdays");
+    if (gapDaysInp) gapDaysInp.addEventListener("change", function () { saveSettings({ gapDays: clamp(parseInt(gapDaysInp.value, 10) || 3, 1, 30) }); });
+    var testBtn = document.getElementById("lyv-reminder-test");
+    if (testBtn) testBtn.addEventListener("click", function () {
+      try { new Notification("\u{1F514} 테스트 알림", { body: "정상적으로 알림이 도착했습니다." }); } catch (e) {}
+    });
+  }
+
+  function pruneReminderLog(log, todayStr) {
+    var cutoff = addDaysStr(todayStr, -14);
+    var out = {};
+    Object.keys(log).forEach(function (k) {
+      var datePart = k.slice(0, 10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(datePart) && datePart < cutoff) return;
+      out[k] = true;
+    });
+    return out;
+  }
+
+  function checkReminders() {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    var settings = readJSON(LS.reminderSettings, DEFAULT_REMINDER_SETTINGS);
+    if (!settings.enabled) return;
+
+    var now = new Date();
+    var todayStr = getTodayStr();
+    var hour = now.getHours();
+    var log = pruneReminderLog(readJSON(LS.reminderLog, {}), todayStr);
+    var changed = false;
+
+    function notifyOnce(key, title, opts) {
+      if (log[key]) return;
+      try { new Notification(title, opts); } catch (e) {}
+      log[key] = true;
+      changed = true;
+    }
+
+    // 1) 취침 마커 체크 (당일 기록에 종료 마커가 하나도 없는데 기준 시각을 넘긴 경우)
+    if (hour >= settings.sleepHour) {
+      var day = getDayData(todayStr);
+      var hasEndMarker = false;
+      if (day && day.hourData) {
+        Object.keys(day.hourData).forEach(function (h) {
+          (day.hourData[h].quarters || []).forEach(function (q) {
+            if (isDayEnd(q.text)) hasEndMarker = true;
+          });
+        });
+      }
+      if (!hasEndMarker) {
+        notifyOnce(todayStr + ":sleepcheck", "\u{1F319} 취침 기록을 확인해주세요", { body: "오늘 아직 '취침' 같은 종료 마커가 없어요.", tag: "lyv-sleep" });
+      }
+    }
+
+    // 2) 목표를 세워둔 카테고리가 최근 gapDays일 동안 전혀 기록되지 않은 경우
+    var goalsAll = readJSON(LS.planGoals, {});
+    var thisMonthGoals = goalsAll[todayStr.slice(0, 7)] || {};
+    var cats = getCategories();
+    Object.keys(thisMonthGoals).forEach(function (catId) {
+      if (!(thisMonthGoals[catId] > 0) || catId === SLEEP_PSEUDO_ID) return;
+      var recordedRecently = false;
+      for (var off = 0; off < settings.gapDays; off++) {
+        var ds = addDaysStr(todayStr, -off);
+        var dd = getDayData(ds);
+        if (dd) {
+          var a = analyzeDay(dd, getSleepCarryIn(ds));
+          if ((a.catMinutes[catId] || 0) > 0) { recordedRecently = true; break; }
+        }
+      }
+      if (!recordedRecently) {
+        var name = catName(catId, cats);
+        notifyOnce(todayStr + ":gap:" + catId, "⏳ \"" + name + "\" 기록이 " + settings.gapDays + "일째 없어요", { body: "목표를 세워둔 항목인데 최근 기록이 없습니다.", tag: "lyv-gap-" + catId });
+      }
+    });
+
+    // 3) 오늘 마감인 할 일
+    var todos = readJSON(LS.todos, []);
+    todos.forEach(function (t) {
+      if (!t.done && t.due === todayStr) {
+        notifyOnce(todayStr + ":todo:" + t.id, "\u{1F4CC} 오늘 마감: " + t.text, { body: "할 일 탭에서 확인해보세요.", tag: "lyv-todo-" + t.id });
+      }
+    });
+
+    if (changed) writeJSON(LS.reminderLog, log);
+  }
+
   var lastSignature = "";
   function refreshAll() {
     var dateStr = getDisplayedDateStr();
@@ -1067,7 +1633,7 @@ firebase/app/dist/esm/index.esm.js:
     // 전날 데이터 길이도 포함하는 이유: 전날 취침 기록을 나중에 수정하면 당일 수면 이어짐 계산도 바뀌어야 하므로.
     var raw = localStorage.getItem(LS.day(dateStr)) || "";
     var rawPrev = localStorage.getItem(LS.day(prevDateStr(dateStr))) || "";
-    var sig = dateStr + ":" + raw.length + ":" + rawPrev.length + ":" + activeTab + ":" + (planMonth || "") + ":" + (yearSel || "");
+    var sig = dateStr + ":" + raw.length + ":" + rawPrev.length + ":" + activeTab + ":" + (planMonth || "") + ":" + (yearSel || "") + ":" + (weekStart || "");
     if (sig === lastSignature && document.activeElement && wrap.contains(document.activeElement)) {
       return; // addon 내부에 포커스가 있는 입력 중에는 강제로 다시 그리지 않음
     }
@@ -1079,6 +1645,8 @@ firebase/app/dist/esm/index.esm.js:
   renderTabBody(getDisplayedDateStr());
   refreshAll();
   setInterval(refreshAll, 1000);
+  setInterval(checkReminders, 60000);
+  checkReminders();
 })();
 
 </script>
