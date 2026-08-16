@@ -46,7 +46,7 @@ const firebaseConfig = {
   databaseURL: "https://....firebaseio.com",
   projectId: "...",
   ...
-};`,rows:6,className:"w-full border border-neutral-300 rounded p-2 text-[10px] font-mono resize-y"}),(0,v.jsx)("button",{onClick:Ky,className:"w-full bg-neutral-800 text-white rounded py-1.5",children:"\uC800\uC7A5 \uBC0F \uB3D9\uAE30\uD654 \uCF1C\uAE30"})]}),of&&(0,v.jsx)("p",{className:"text-neutral-500 mt-1.5 text-center",children:of})]})]}),(0,v.jsx)("a",{href:"https://blog.naver.com/bgroh",target:"_blank",rel:"noopener noreferrer",className:"text-[10px] text-neutral-400 hover:text-neutral-600 mt-3 text-center",children:"RBG Tools - Daily Planner V3.3"}),(0,v.jsx)("p",{className:"text-[10px] text-neutral-400 mt-2",children:"\uB370\uC774\uD130\uB294 \uC774 \uAE30\uAE30\uC758 \uC774 \uC571 \uC548\uC5D0 \uB0A0\uC9DC\uBCC4\uB85C \uC790\uB3D9 \uC800\uC7A5\uB429\uB2C8\uB2E4."}),zoomImg&&(0,v.jsx)("div",{onClick:()=>setZoomImg(null),style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:16},children:(0,v.jsxs)("div",{onClick:e=>e.stopPropagation(),style:{position:"relative",maxWidth:"100%",maxHeight:"100%"},children:[(0,v.jsx)("img",{src:zoomImg,style:{maxWidth:"100%",maxHeight:"90vh",objectFit:"contain",borderRadius:4}}),(0,v.jsx)("button",{onClick:()=>setZoomImg(null),style:{position:"absolute",top:-14,right:-14,background:"#000",color:"#fff",borderRadius:"9999px",width:28,height:28,fontSize:16,lineHeight:"28px",border:"2px solid #fff"},children:"\u00D7"})]})})]})}var BS=(0,Uy.createRoot)(document.getElementById("root"));BS.render(By.default.createElement(Xd));})();
+};`,rows:6,className:"w-full border border-neutral-300 rounded p-2 text-[10px] font-mono resize-y"}),(0,v.jsx)("button",{onClick:Ky,className:"w-full bg-neutral-800 text-white rounded py-1.5",children:"\uC800\uC7A5 \uBC0F \uB3D9\uAE30\uD654 \uCF1C\uAE30"})]}),of&&(0,v.jsx)("p",{className:"text-neutral-500 mt-1.5 text-center",children:of})]})]}),(0,v.jsx)("a",{href:"https://blog.naver.com/bgroh",target:"_blank",rel:"noopener noreferrer",className:"text-[10px] text-neutral-400 hover:text-neutral-600 mt-3 text-center",children:"RBG Tools - Daily Planner V3.4"}),(0,v.jsx)("p",{className:"text-[10px] text-neutral-400 mt-2",children:"\uB370\uC774\uD130\uB294 \uC774 \uAE30\uAE30\uC758 \uC774 \uC571 \uC548\uC5D0 \uB0A0\uC9DC\uBCC4\uB85C \uC790\uB3D9 \uC800\uC7A5\uB429\uB2C8\uB2E4."}),zoomImg&&(0,v.jsx)("div",{onClick:()=>setZoomImg(null),style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:16},children:(0,v.jsxs)("div",{onClick:e=>e.stopPropagation(),style:{position:"relative",maxWidth:"100%",maxHeight:"100%"},children:[(0,v.jsx)("img",{src:zoomImg,style:{maxWidth:"100%",maxHeight:"90vh",objectFit:"contain",borderRadius:4}}),(0,v.jsx)("button",{onClick:()=>setZoomImg(null),style:{position:"absolute",top:-14,right:-14,background:"#000",color:"#fff",borderRadius:"9999px",width:28,height:28,fontSize:16,lineHeight:"28px",border:"2px solid #fff"},children:"\u00D7"})]})})]})}var BS=(0,Uy.createRoot)(document.getElementById("root"));BS.render(By.default.createElement(Xd));})();
 /*! Bundled license information:
 
 react/cjs/react.production.min.js:
@@ -500,6 +500,11 @@ firebase/app/dist/esm/index.esm.js:
   ];
   var DAY_START_WORDS = ["시작", "스타트", "기상", "start", "출발"];
   var DAY_END_WORDS = ["취침", "잠자리", "잠자기", "잠듦", "끝", "종료"];
+  // 수면은 일반 카테고리 목록에 없는 별도 항목이라 계획대비실적/연간정리에도
+  // 표시할 수 있도록 의사(pseudo) 카테고리로 취급한다 (류비셰프도 수면을 별도 자원으로 기록함).
+  var SLEEP_PSEUDO_ID = "__sleep__";
+  var SLEEP_NAME = "수면";
+  var SLEEP_COLOR = "#B3B3B3";
 
   function isDayStart(s) {
     if (!s) return false;
@@ -510,6 +515,12 @@ firebase/app/dist/esm/index.esm.js:
     return DAY_END_WORDS.indexOf(s.trim()) !== -1;
   }
   function pad2(n) { return String(n).padStart(2, "0"); }
+  function prevDateStr(dateStr) {
+    var p = dateStr.split("-").map(Number);
+    var dt = new Date(p[0], p[1] - 1, p[2]);
+    dt.setDate(dt.getDate() - 1);
+    return dt.getFullYear() + "-" + pad2(dt.getMonth() + 1) + "-" + pad2(dt.getDate());
+  }
   function esc(s) {
     var d = document.createElement("div");
     d.textContent = s == null ? "" : String(s);
@@ -564,11 +575,11 @@ firebase/app/dist/esm/index.esm.js:
 
   /* 하루 데이터를 분석해서 카테고리별/수면/미기록 시간을 계산.
      본 앱의 "빈 칸은 직전 유형이 이어진다" 규칙(CatBlockEnd 로직)을 최대한 동일하게 재현. */
-  function analyzeDay(dayData) {
+  function analyzeDay(dayData, carryInSleep) {
     var d = dayData || emptyDay();
     var catMinutes = {};
     var sleepMinutes = 0, unrecordedMinutes = 0;
-    var currentCat = null, inSleep = false;
+    var currentCat = null, inSleep = !!carryInSleep;
     var blocks = [];
     for (var idx = 0; idx < 96; idx++) {
       var h = Math.floor(idx / 4), q = idx % 4;
@@ -595,7 +606,17 @@ firebase/app/dist/esm/index.esm.js:
       else if (inSleep) { sleepMinutes += 15; }
       else { unrecordedMinutes += 15; }
     }
-    return { catMinutes: catMinutes, sleepMinutes: sleepMinutes, unrecordedMinutes: unrecordedMinutes, blocks: blocks };
+    return { catMinutes: catMinutes, sleepMinutes: sleepMinutes, unrecordedMinutes: unrecordedMinutes, blocks: blocks, endState: { currentCat: currentCat, inSleep: inSleep } };
+  }
+
+  /* 당일에 취침/잠자리/잠자기/잠듦/끝/종료 같은 종료 마커가 없어도,
+     전날 데이터를 다시 분석해 전날이 "수면 중" 상태로 끝났다면(=종료 마커 이후
+     당일 기상/시작 마커가 나오기 전까지) 그 수면이 자정을 넘겨 이어지는 것으로 간주한다. */
+  function getSleepCarryIn(dateStr) {
+    var prevData = getDayData(prevDateStr(dateStr));
+    if (!prevData) return false;
+    var prevResult = analyzeDay(prevData);
+    return !!(prevResult.endState && prevResult.endState.inSleep);
   }
 
   function fmtHM(min) {
@@ -620,7 +641,7 @@ firebase/app/dist/esm/index.esm.js:
     var days = keysWithPrefix(ym);
     var catMinutes = {}, sleepMinutes = 0, unrecordedMinutes = 0;
     days.forEach(function (dateStr) {
-      var a = analyzeDay(getDayData(dateStr));
+      var a = analyzeDay(getDayData(dateStr), getSleepCarryIn(dateStr));
       Object.keys(a.catMinutes).forEach(function (cid) {
         catMinutes[cid] = (catMinutes[cid] || 0) + a.catMinutes[cid];
       });
@@ -714,7 +735,8 @@ firebase/app/dist/esm/index.esm.js:
     titleEl.textContent = dateStr + " 기록 현황";
 
     var day = getDayData(dateStr);
-    var a = analyzeDay(day);
+    var carryIn = getSleepCarryIn(dateStr);
+    var a = analyzeDay(day, carryIn);
     var cats = getCategories();
     var totalCatMin = 0;
     Object.keys(a.catMinutes).forEach(function (k) { totalCatMin += a.catMinutes[k]; });
@@ -725,13 +747,15 @@ firebase/app/dist/esm/index.esm.js:
     html += '<div class="flex items-center gap-3 mb-2">';
     html += '<div class="text-[22px] font-bold text-neutral-800">' + pct + '%</div>';
     html += '<div class="flex-1 text-[11px] text-neutral-600 leading-tight">';
-    html += '기록됨 ' + fmtHM(recordedMin) + ' (분류 ' + fmtHM(totalCatMin) + ' + 수면추정 ' + fmtHM(a.sleepMinutes) + ')<br>';
+    html += '기록됨 ' + fmtHM(recordedMin) + ' (분류 ' + fmtHM(totalCatMin) + ' + 수면추정 ' + fmtHM(a.sleepMinutes) + ')';
+    if (carryIn) html += ' <span class="text-neutral-400">· 전날 수면 이어짐</span>';
+    html += '<br>';
     html += '<span class="' + (a.unrecordedMinutes > 0 ? "text-rose-500 font-bold" : "text-neutral-400") + '">미기록 ' + fmtHM(a.unrecordedMinutes) + '</span>';
     html += '</div></div>';
 
-    // 96칸 히트맵 스트립
+    // 96칸 히트맵 스트립 (전날이 "수면 중"으로 끝났다면 자정 이후도 수면으로 이어서 표시)
     html += '<div class="flex w-full h-3 rounded-sm overflow-hidden border border-neutral-200 mb-1">';
-    var currentCat = null, inSleep = false;
+    var currentCat = null, inSleep = carryIn;
     for (var idx = 0; idx < 96; idx++) {
       var h = Math.floor(idx / 4), q = idx % 4;
       var hd = day && day.hourData && day.hourData[String(h)];
@@ -785,6 +809,25 @@ firebase/app/dist/esm/index.esm.js:
       }
       html += '</div>';
     });
+
+    // 수면 목표 대비 실적 (일반 분류 카테고리는 아니지만 류비셰프 방식에서 수면도 관리 대상 자원)
+    (function () {
+      var goalMin = (goals[SLEEP_PSEUDO_ID] || 0) * 60;
+      var actMin = actual.sleepMinutes || 0;
+      var ratio = goalMin > 0 ? clamp((actMin / goalMin) * 100, 0, 999) : null;
+      html += '<div>';
+      html += '<div class="flex items-center gap-2 text-[11px] mb-0.5">';
+      html += '<span class="inline-block w-2.5 h-2.5 rounded-sm" style="background:' + SLEEP_COLOR + '"></span>';
+      html += '<span class="w-14 shrink-0 truncate">' + esc(SLEEP_NAME) + '</span>';
+      html += '<input type="number" min="0" step="0.5" data-goal-cat="' + SLEEP_PSEUDO_ID + '" value="' + (goals[SLEEP_PSEUDO_ID] || "") + '" placeholder="목표(h)" class="w-16 border border-neutral-300 rounded-sm px-1 py-0.5 text-[11px]">';
+      html += '<span class="text-neutral-400">h →</span>';
+      html += '<span class="flex-1 text-right font-bold">' + fmtHM(actMin) + (ratio !== null ? ' <span class="text-neutral-400 font-normal">(' + Math.round(ratio) + '%)</span>' : '') + '</span>';
+      html += '</div>';
+      if (goalMin > 0) {
+        html += '<div class="w-full h-1.5 bg-neutral-100 rounded-sm overflow-hidden"><div style="width:' + clamp(ratio, 0, 100) + '%;background:' + SLEEP_COLOR + '" class="h-full"></div></div>';
+      }
+      html += '</div>';
+    })();
     html += '</div>';
 
     document.getElementById("lyv-tab-body").innerHTML = html;
@@ -821,6 +864,7 @@ firebase/app/dist/esm/index.esm.js:
     var y = sumYear(yearSel);
     var totalCatMin = 0;
     Object.keys(y.catMinutes).forEach(function (k) { totalCatMin += y.catMinutes[k]; });
+    var totalWithSleep = totalCatMin + y.sleepMinutes;
 
     var html = "";
     html += '<div class="flex items-center justify-center gap-3 mb-2">';
@@ -830,17 +874,19 @@ firebase/app/dist/esm/index.esm.js:
     html += '</div>';
     html += '<div class="text-[10px] text-neutral-400 mb-2">기록된 날 ' + y.dayCount + '일 · 분류시간 합계 ' + fmtHM(totalCatMin) + ' · 수면추정 ' + fmtHM(y.sleepMinutes) + '</div>';
 
-    // 카테고리별 막대
+    // 카테고리별 막대 (수면도 의사 카테고리로 함께 표시)
     html += '<div class="space-y-1 mb-3">';
-    var sorted = cats.slice().sort(function (a, b) { return (y.catMinutes[b.id] || 0) - (y.catMinutes[a.id] || 0); });
-    sorted.forEach(function (c) {
-      var m = y.catMinutes[c.id] || 0;
+    var barItems = cats.map(function (c) { return { id: c.id, name: c.name, color: c.color, min: y.catMinutes[c.id] || 0 }; });
+    barItems.push({ id: SLEEP_PSEUDO_ID, name: SLEEP_NAME, color: SLEEP_COLOR, min: y.sleepMinutes });
+    var sorted = barItems.sort(function (a, b) { return b.min - a.min; });
+    sorted.forEach(function (it) {
+      var m = it.min;
       if (m <= 0) return;
-      var pct = totalCatMin > 0 ? Math.round((m / totalCatMin) * 100) : 0;
+      var pct = totalWithSleep > 0 ? Math.round((m / totalWithSleep) * 100) : 0;
       html += '<div class="flex items-center gap-2 text-[11px]">';
-      html += '<span class="inline-block w-2.5 h-2.5 rounded-sm shrink-0" style="background:' + c.color + '"></span>';
-      html += '<span class="w-14 shrink-0 truncate">' + esc(c.name) + '</span>';
-      html += '<div class="flex-1 h-2 bg-neutral-100 rounded-sm overflow-hidden"><div style="width:' + pct + '%;background:' + c.color + '" class="h-full"></div></div>';
+      html += '<span class="inline-block w-2.5 h-2.5 rounded-sm shrink-0" style="background:' + it.color + '"></span>';
+      html += '<span class="w-14 shrink-0 truncate">' + esc(it.name) + '</span>';
+      html += '<div class="flex-1 h-2 bg-neutral-100 rounded-sm overflow-hidden"><div style="width:' + pct + '%;background:' + it.color + '" class="h-full"></div></div>';
       html += '<span class="w-9 text-right text-neutral-500">' + pct + '%</span>';
       html += '</div>';
     });
@@ -887,7 +933,7 @@ firebase/app/dist/esm/index.esm.js:
   function renderEstTab(dateStr) {
     var list = readJSON(LS.taskLog(dateStr), []);
     var day = getDayData(dateStr);
-    var a = analyzeDay(day);
+    var a = analyzeDay(day, getSleepCarryIn(dateStr));
 
     var html = "";
     html += '<div class="text-[12px] font-bold mb-2">' + dateStr + ' 예상 · 실제 소요시간</div>';
@@ -1017,9 +1063,11 @@ firebase/app/dist/esm/index.esm.js:
   var lastSignature = "";
   function refreshAll() {
     var dateStr = getDisplayedDateStr();
-    // 시그니처(날짜 + 해당 day 데이터 길이)로 변화 감지 -> 불필요한 리렌더/포커스 끊김 최소화
+    // 시그니처(날짜 + 해당 day 데이터 길이 + 전날 데이터 길이)로 변화 감지 -> 불필요한 리렌더/포커스 끊김 최소화
+    // 전날 데이터 길이도 포함하는 이유: 전날 취침 기록을 나중에 수정하면 당일 수면 이어짐 계산도 바뀌어야 하므로.
     var raw = localStorage.getItem(LS.day(dateStr)) || "";
-    var sig = dateStr + ":" + raw.length + ":" + activeTab + ":" + (planMonth || "") + ":" + (yearSel || "");
+    var rawPrev = localStorage.getItem(LS.day(prevDateStr(dateStr))) || "";
+    var sig = dateStr + ":" + raw.length + ":" + rawPrev.length + ":" + activeTab + ":" + (planMonth || "") + ":" + (yearSel || "");
     if (sig === lastSignature && document.activeElement && wrap.contains(document.activeElement)) {
       return; // addon 내부에 포커스가 있는 입력 중에는 강제로 다시 그리지 않음
     }
