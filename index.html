@@ -46,7 +46,7 @@ const firebaseConfig = {
   databaseURL: "https://....firebaseio.com",
   projectId: "...",
   ...
-};`,rows:6,className:"w-full border border-neutral-300 rounded p-2 text-[10px] font-mono resize-y"}),(0,v.jsx)("button",{onClick:Ky,className:"w-full bg-neutral-800 text-white rounded py-1.5",children:"\uC800\uC7A5 \uBC0F \uB3D9\uAE30\uD654 \uCF1C\uAE30"})]}),of&&(0,v.jsx)("p",{className:"text-neutral-500 mt-1.5 text-center",children:of})]})]}),(0,v.jsx)("a",{href:"https://blog.naver.com/bgroh",target:"_blank",rel:"noopener noreferrer",className:"text-[10px] text-neutral-400 hover:text-neutral-600 mt-3 text-center",children:"RBG Tools - Daily Planner V3.5"}),(0,v.jsx)("p",{className:"text-[10px] text-neutral-400 mt-2",children:"\uB370\uC774\uD130\uB294 \uC774 \uAE30\uAE30\uC758 \uC774 \uC571 \uC548\uC5D0 \uB0A0\uC9DC\uBCC4\uB85C \uC790\uB3D9 \uC800\uC7A5\uB429\uB2C8\uB2E4."}),zoomImg&&(0,v.jsx)("div",{onClick:()=>setZoomImg(null),style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:16},children:(0,v.jsxs)("div",{onClick:e=>e.stopPropagation(),style:{position:"relative",maxWidth:"100%",maxHeight:"100%"},children:[(0,v.jsx)("img",{src:zoomImg,style:{maxWidth:"100%",maxHeight:"90vh",objectFit:"contain",borderRadius:4}}),(0,v.jsx)("button",{onClick:()=>setZoomImg(null),style:{position:"absolute",top:-14,right:-14,background:"#000",color:"#fff",borderRadius:"9999px",width:28,height:28,fontSize:16,lineHeight:"28px",border:"2px solid #fff"},children:"\u00D7"})]})})]})}var BS=(0,Uy.createRoot)(document.getElementById("root"));BS.render(By.default.createElement(Xd));})();
+};`,rows:6,className:"w-full border border-neutral-300 rounded p-2 text-[10px] font-mono resize-y"}),(0,v.jsx)("button",{onClick:Ky,className:"w-full bg-neutral-800 text-white rounded py-1.5",children:"\uC800\uC7A5 \uBC0F \uB3D9\uAE30\uD654 \uCF1C\uAE30"})]}),of&&(0,v.jsx)("p",{className:"text-neutral-500 mt-1.5 text-center",children:of})]})]}),(0,v.jsx)("a",{href:"https://blog.naver.com/bgroh",target:"_blank",rel:"noopener noreferrer",className:"text-[10px] text-neutral-400 hover:text-neutral-600 mt-3 text-center",children:"RBG Tools - Daily Planner V3.6"}),(0,v.jsx)("p",{className:"text-[10px] text-neutral-400 mt-2",children:"\uB370\uC774\uD130\uB294 \uC774 \uAE30\uAE30\uC758 \uC774 \uC571 \uC548\uC5D0 \uB0A0\uC9DC\uBCC4\uB85C \uC790\uB3D9 \uC800\uC7A5\uB429\uB2C8\uB2E4."}),zoomImg&&(0,v.jsx)("div",{onClick:()=>setZoomImg(null),style:{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:16},children:(0,v.jsxs)("div",{onClick:e=>e.stopPropagation(),style:{position:"relative",maxWidth:"100%",maxHeight:"100%"},children:[(0,v.jsx)("img",{src:zoomImg,style:{maxWidth:"100%",maxHeight:"90vh",objectFit:"contain",borderRadius:4}}),(0,v.jsx)("button",{onClick:()=>setZoomImg(null),style:{position:"absolute",top:-14,right:-14,background:"#000",color:"#fff",borderRadius:"9999px",width:28,height:28,fontSize:16,lineHeight:"28px",border:"2px solid #fff"},children:"\u00D7"})]})})]})}var BS=(0,Uy.createRoot)(document.getElementById("root"));BS.render(By.default.createElement(Xd));})();
 /*! Bundled license information:
 
 react/cjs/react.production.min.js:
@@ -571,8 +571,104 @@ firebase/app/dist/esm/index.esm.js:
       return raw ? JSON.parse(raw) : fallback;
     } catch (e) { return fallback; }
   }
-  function writeJSON(key, val) {
+  function writeJSON(key, val, opts) {
     try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+    if (!opts || !opts.noSync) addonSyncPush_(key, val);
+  }
+
+  /* ============================================================
+   * 확장 데이터 클라우드 동기화
+   * 본체 플래너가 저장해둔 Firebase 설정(localStorage "syncConfig")을 그대로
+   * 재사용해서 목표(계획/주간)·할일·주간정리·월간회고·리마인더 설정을 동기화한다.
+   * 하루 기록(day:*)과 분류(categories)는 본체가 이미 자체적으로 동기화하므로
+   * 여기서는 건드리지 않는다.
+   * ========================================================== */
+  var ADDON_SYNC_META_KEY = "lyv_addonSyncMeta_v1";
+  var ADDON_SYNCED_FIELDS = {};
+  ADDON_SYNCED_FIELDS[LS.planGoals] = "planGoals";
+  ADDON_SYNCED_FIELDS[LS.weekGoals] = "weekGoals";
+  ADDON_SYNCED_FIELDS[LS.todos] = "todos";
+  ADDON_SYNCED_FIELDS[LS.monthlyReview] = "monthlyReview";
+  ADDON_SYNCED_FIELDS[LS.reminderSettings] = "reminderSettings";
+
+  function addonSyncCfg_() {
+    try {
+      var raw = localStorage.getItem("syncConfig");
+      if (!raw) return null;
+      var cfg = JSON.parse(raw);
+      if (!cfg || !cfg.databaseURL) return null;
+      return cfg;
+    } catch (e) { return null; }
+  }
+  function addonRemotePathForKey_(lsKey) {
+    if (ADDON_SYNCED_FIELDS[lsKey]) return "backup/addon/" + ADDON_SYNCED_FIELDS[lsKey];
+    if (lsKey.indexOf("lyv_taskLog_v1:") === 0) return "backup/addon/taskLog/" + lsKey.slice("lyv_taskLog_v1:".length);
+    return null;
+  }
+  function addonDbUrl_(path) {
+    var cfg = addonSyncCfg_();
+    if (!cfg) return null;
+    var base = String(cfg.databaseURL).replace(/\/+$/, "");
+    return base + "/" + path + ".json";
+  }
+  function addonSyncMetaAll_() { return readJSON(ADDON_SYNC_META_KEY, {}); }
+  function addonSyncMetaSet_(path, ts) {
+    var m = addonSyncMetaAll_();
+    m[path] = ts;
+    try { localStorage.setItem(ADDON_SYNC_META_KEY, JSON.stringify(m)); } catch (e) {}
+  }
+
+  var addonPushTimers_ = {};
+  function addonSyncPush_(lsKey, value) {
+    var path = addonRemotePathForKey_(lsKey);
+    if (!path) return;
+    var url = addonDbUrl_(path);
+    if (!url) return;
+    clearTimeout(addonPushTimers_[lsKey]);
+    addonPushTimers_[lsKey] = setTimeout(function () {
+      var ts = Date.now();
+      fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ v: value, ts: ts })
+      }).then(function (res) {
+        if (res && res.ok) addonSyncMetaSet_(path, ts);
+      }).catch(function () {});
+    }, 600);
+  }
+  function addonSyncPull_(lsKey) {
+    var path = addonRemotePathForKey_(lsKey);
+    if (!path) return Promise.resolve(false);
+    var url = addonDbUrl_(path);
+    if (!url) return Promise.resolve(false);
+    return fetch(url).then(function (res) {
+      return res && res.ok ? res.json() : null;
+    }).then(function (envelope) {
+      var meta = addonSyncMetaAll_();
+      var localTs = meta[path] || 0;
+      if (envelope && typeof envelope.ts === "number") {
+        if (envelope.ts > localTs) {
+          writeJSON(lsKey, envelope.v, { noSync: true });
+          addonSyncMetaSet_(path, envelope.ts);
+          return true;
+        }
+        return false;
+      }
+      // 원격에 아직 값이 없고 이 기기가 한 번도 동기화한 적 없다면
+      // 기존 로컬 데이터를 최초 1회 업로드해 다른 기기에서도 보이게 한다.
+      if (localTs === 0) {
+        var localVal = readJSON(lsKey, null);
+        if (localVal !== null && localVal !== undefined) addonSyncPush_(lsKey, localVal);
+      }
+      return false;
+    }).catch(function () { return false; });
+  }
+  function addonSyncPullAll_(onChanged) {
+    if (!addonSyncCfg_()) return;
+    var keys = [LS.planGoals, LS.weekGoals, LS.todos, LS.monthlyReview, LS.reminderSettings];
+    Promise.all(keys.map(addonSyncPull_)).then(function (results) {
+      if (results.indexOf(true) !== -1 && typeof onChanged === "function") onChanged();
+    });
   }
 
   function getCategories() {
@@ -727,12 +823,42 @@ firebase/app/dist/esm/index.esm.js:
       var btns = root.querySelectorAll("button");
       for (var i = 0; i < btns.length; i++) {
         var t = (btns[i].textContent || "").trim();
-        var m = t.match(/^(\d{4})\.\s*(\d{2})\.\s*(\d{2})\./);
+        var m = t.match(/^(\d{4})\.\s*(\d{2})\.\s*(\d{2})\.?(\s|$)/);
         if (m) return m[1] + "-" + m[2] + "-" + m[3];
       }
     }
     var d = new Date();
     return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+
+  // 히트맵 등에서 날짜를 클릭했을 때 본체 플래너가 보여주는 날짜를 그 날짜로 이동시킨다.
+  // React 트리를 직접 건드리지 않고, 사용자가 직접 조작하는 것과 동일하게
+  // 날짜 토글 버튼을 눌러 <input type="date">를 열고 값을 바꿔 입력 이벤트를 발생시키는 방식으로 동작.
+  function addonNavigateToDate_(dateStr) {
+    var root = document.getElementById("root");
+    if (!root || !dateStr) return;
+    var toggleBtn = null;
+    var btns = root.querySelectorAll("button");
+    for (var i = 0; i < btns.length; i++) {
+      var t = (btns[i].textContent || "").trim();
+      if (/^(\d{4})\.\s*(\d{2})\.\s*(\d{2})\.?(\s|$)/.test(t)) { toggleBtn = btns[i]; break; }
+    }
+    if (!toggleBtn) return;
+    function applyToInput() {
+      var input = root.querySelector('input[type="date"]');
+      if (!input) return false;
+      var desc = window.HTMLInputElement && Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value");
+      if (desc && desc.set) desc.set.call(input, dateStr); else input.value = dateStr;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      setTimeout(function () { if (toggleBtn) toggleBtn.click(); }, 50);
+      return true;
+    }
+    if (!applyToInput()) {
+      toggleBtn.click();
+      setTimeout(applyToInput, 30);
+    }
+    try { root.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
   }
 
   /* ============================================================
@@ -1224,10 +1350,10 @@ firebase/app/dist/esm/index.esm.js:
       row.forEach(function (cell) {
         if (cell === null) { html += '<div class="flex-1"></div>'; return; }
         if (cell.pct === null) {
-          html += '<div class="flex-1 rounded-[1px]" style="height:6px;background:#eeeeec" title="' + cell.date + ': 기록 없음"></div>';
+          html += '<div class="flex-1 rounded-[1px] cursor-pointer hover:ring-1 hover:ring-neutral-400" data-heat-date="' + cell.date + '" style="height:6px;background:#eeeeec" title="' + cell.date + ': 기록 없음 (클릭하면 이동)"></div>';
         } else {
           var alpha = (0.12 + (clamp(cell.pct, 0, 100) / 100) * 0.85).toFixed(2);
-          html += '<div class="flex-1 rounded-[1px]" style="height:6px;background:rgba(59,130,246,' + alpha + ')" title="' + cell.date + ': ' + cell.pct + '%"></div>';
+          html += '<div class="flex-1 rounded-[1px] cursor-pointer hover:ring-1 hover:ring-neutral-400" data-heat-date="' + cell.date + '" style="height:6px;background:rgba(59,130,246,' + alpha + ')" title="' + cell.date + ': ' + cell.pct + '% (클릭하면 이동)"></div>';
         }
       });
       html += '</div></div>';
@@ -1283,6 +1409,11 @@ firebase/app/dist/esm/index.esm.js:
         var d = parseInt(btn.getAttribute("data-year-nav"), 10);
         yearSel = String(parseInt(yearSel, 10) + d);
         renderYearTab(getDisplayedDateStr());
+      });
+    });
+    document.querySelectorAll("[data-heat-date]").forEach(function (cell) {
+      cell.addEventListener("click", function () {
+        addonNavigateToDate_(cell.getAttribute("data-heat-date"));
       });
     });
   }
@@ -1647,6 +1778,22 @@ firebase/app/dist/esm/index.esm.js:
   setInterval(refreshAll, 1000);
   setInterval(checkReminders, 60000);
   checkReminders();
+
+  // 확장 데이터(목표/할일/주간·월간 정리/리마인더 설정) 동기화: 시작 시 + 주기적으로 + 탭 복귀 시
+  function addonSyncTick_() {
+    addonSyncPullAll_(function () {
+      lastSignature = ""; // 강제 리렌더
+      renderStatus(getDisplayedDateStr());
+      renderTabBody(getDisplayedDateStr());
+    });
+    addonSyncPull_(LS.taskLog(getDisplayedDateStr()));
+  }
+  addonSyncTick_();
+  setInterval(addonSyncTick_, 45000);
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) addonSyncTick_();
+  });
+  window.addEventListener("focus", addonSyncTick_);
 })();
 
 </script>
